@@ -154,7 +154,7 @@ Taiko.addHitListener = function(callback) {
 
 Taiko.updateTime = function() {
     this._playTime = this.msec() - this.startTime;
-}
+};
 
 Taiko.onHit = function() {
     var performance = this._lastHit.performance;
@@ -173,11 +173,11 @@ Taiko.onHit = function() {
             this._combo = 0;
     }
     ++this._playdata[performance];
-}
+};
 
 Taiko.msec = function() {
     return Date.now();
-}
+};
 
 Taiko.SE = function(url) {
     this.buffer = new WebAudio(url);
