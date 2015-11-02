@@ -192,13 +192,17 @@ Taiko.SE.prototype.play = function() {
 Taiko.Song = {
     play: function(wave, volume, loop, offset, callback) {
         Taiko.Song.prepare(wave);
-        this._song.addLoadListener(function() {
-            this._song.volume = volume;
-            this._song.play(false, offset);
-            if(callback) { callback(this._song); }
-        }.bind(this));
+        this._song.volume = volume;
+        this._song.play(false, offset);
+        this._callback = callback;
+        if(callback) {
+            this._song.addLoadListener(function() {
+                if(this._callback) { this._callback(); }
+            }.bind(this));
+        }
     },
     stop: function() {
+        this._callback = null;
         this._song.stop();
     },
     prepare: function(wave) {
