@@ -101,10 +101,15 @@ Taiko.isGogotime = function() {
 };
 
 Taiko.start = function() {
-    Taiko.Song.play(this._songdata.wave, this.songvol, false, 0, function() {
-        this._startTime = this.msec();
-        this.updateTime();
-    }.bind(this));
+    Taiko.Song.play(this._songdata.wave, this.songvol, false, 0);
+    this._startTime = this.msec();
+    this.updateTime();
+};
+
+Taiko.tryStart = function() {
+    if(Taiko.Song.isReady()) {
+        Taiko.start();
+    }
 };
 
 Taiko.setup = function(songdata) {
@@ -113,6 +118,7 @@ Taiko.setup = function(songdata) {
     this._songdata = songdata;
     this._fumen = new Taiko.Fumen(songdata);
     this._gauge = new Taiko.Gauge(this._fumen);
+    Taiko.Song.prepare(songdata.wave);
 };
 
 Taiko.clear = function() {
@@ -190,29 +196,22 @@ Taiko.SE.prototype.play = function() {
 
 
 Taiko.Song = {
-    play: function(wave, volume, loop, offset, callback) {
-        Taiko.Song.prepare(wave);
+    play: function(wave, volume, loop, offset) {
+        this.prepare(wave);
         this._song.volume = volume;
         this._song.play(false, offset);
-        this._callback = callback;
-        if(callback) {
-            this._song.addLoadListener(function() {
-                if(this._callback) { this._callback(); }
-            }.bind(this));
-        }
     },
     stop: function() {
-        this._callback = null;
         this._song.stop();
+    },
+    isReady: function() {
+        return this._song.isReady();
     },
     prepare: function(wave) {
         if(this._song.url !== wave) {
             this._song.clear();
             this._song = new WebAudio(wave);
         }
-    },
-    isReady: function() {
-        return this._song.isReady();
     },
     _song: Object.create(WebAudio.prototype)
 };

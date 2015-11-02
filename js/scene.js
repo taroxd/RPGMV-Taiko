@@ -506,10 +506,6 @@ Scene.Play.prototype.create = function() {
     this.addChild(new View.Play());
 };
 
-Scene.Play.prototype.isReady = function() {
-    return Scene.Base.prototype.isReady.call(this) && Taiko.Song.isReady();
-};
-
 Scene.Play.prototype.update = function() {
     Scene.Base.prototype.update.call(this);
     if(Taiko.isStarted()) {
@@ -524,7 +520,7 @@ Scene.Play.prototype.update = function() {
 };
 
 Scene.Play.prototype.updateBeforeStarted = function() {
-    if(Input.isTriggered('ok')) { Taiko.start(); }
+    if(Input.isTriggered('ok')) { Taiko.tryStart(); }
 };
 
 Scene.Play.prototype.updateAfterStarted = function() {
