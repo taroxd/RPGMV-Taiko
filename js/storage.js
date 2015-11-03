@@ -102,19 +102,14 @@ Storage.localFilePath = function(filename) {
 };
 
 Storage.readFile = function(filename, callback) {
-    if (this.isLocalMode()) {
-        var fs = require('fs');
-        fs.readFile(this.localFilePath(filename), 'utf8', callback);
-    } else {
-        var xhr = new XMLHttpRequest();
-        xhr.open('GET', filename);
-        xhr.overrideMimeType('text/plain');
-        xhr.onload = function() {
-            if (xhr.status < 400) {
-                callback(null, xhr.response);
-            }
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', filename);
+    xhr.overrideMimeType('text/plain');
+    xhr.onload = function() {
+        if (xhr.status < 400) {
+            callback(null, xhr.response);
         }
-        xhr.onerror = callback;
-        xhr.send();
     }
+    xhr.onerror = callback;
+    xhr.send();
 };
