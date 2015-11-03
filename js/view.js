@@ -299,9 +299,9 @@ View.Play = function() {
     this.addChild(sfieldbg);
     this.addChild(new View.Play.Gogosplash());
     this.addChild(explosions.lower);
-    this.addChild(new View.Play.MTaiko());
     this.addChild(new View.Play.Fumen());
     this.addChild(sfieldbg2);
+    this.addChild(new View.Play.MTaiko());
     this.addChild(new View.Play.Score());
     this.addChild(explosions.upper);
     this.addChild(new View.Play.Judgement());
