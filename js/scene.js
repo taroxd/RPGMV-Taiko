@@ -4,12 +4,8 @@ function Scene() {
 
 Scene._scene             = null;
 Scene._nextScene         = null;
-Scene._stack             = [];
 Scene._stopped           = false;
 Scene._sceneStarted      = false;
-Scene._exiting           = false;
-Scene._previousClass     = null;
-Scene._backgroundBitmap  = null;
 Scene._screenWidth       = 480;
 Scene._screenHeight      = 272;
 Scene._boxWidth          = 480;
@@ -125,10 +121,6 @@ Scene.update = function() {
     }
 };
 
-Scene.terminate = function() {
-    window.close();
-};
-
 Scene.onError = function(e) {
     console.error(e.message);
     console.error(e.filename, e.lineno);
@@ -229,14 +221,6 @@ Scene.isCurrentSceneStarted = function() {
     return this._scene && this._sceneStarted;
 };
 
-Scene.isNextScene = function(sceneClass) {
-    return this._nextScene && this._nextScene.constructor === sceneClass;
-};
-
-Scene.isPreviousScene = function(sceneClass) {
-    return this._previousClass === sceneClass;
-};
-
 Scene.goto = function(sceneClass) {
     if (sceneClass) {
         this._nextScene = new sceneClass();
@@ -244,49 +228,6 @@ Scene.goto = function(sceneClass) {
     if (this._scene) {
         this._scene.stop();
     }
-};
-
-Scene.push = function(sceneClass) {
-    this._stack.push(this._scene.constructor);
-    this.goto(sceneClass);
-};
-
-Scene.pop = function() {
-    if (this._stack.length > 0) {
-        this.goto(this._stack.pop());
-    } else {
-        this.exit();
-    }
-};
-
-Scene.exit = function() {
-    this.goto(null);
-    this._exiting = true;
-};
-
-Scene.clearStack = function() {
-    this._stack = [];
-};
-
-Scene.stop = function() {
-    this._stopped = true;
-};
-
-Scene.prepareNextScene = function() {
-    this._nextScene.prepare.apply(this._nextScene, arguments);
-};
-
-Scene.snap = function() {
-    return Bitmap.snap(this._scene);
-};
-
-Scene.snapForBackground = function() {
-    this._backgroundBitmap = this.snap();
-    this._backgroundBitmap.blur();
-};
-
-Scene.backgroundBitmap = function() {
-    return this._backgroundBitmap;
 };
 
 Scene.Base = function() {
@@ -426,7 +367,7 @@ Scene.SongList.prototype.adjustIndex = function(index) {
     index %= this._songlist.length;
     if(index < 0) { index += this._songlist.length; }
     return index;
-}
+};
 
 Scene.SongList.prototype.updateIndex = function() {
     var lastIndex = this._index
