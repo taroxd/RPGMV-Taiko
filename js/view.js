@@ -297,6 +297,7 @@ View.Play = function() {
     var explosions = View.Play.Explosion.create();
 
     this.addChild(sfieldbg);
+    this.addChild(new View.Play.SfieldFlash());
     this.addChild(new View.Play.Gogosplash());
     this.addChild(explosions.lower);
     this.addChild(new View.Play.Fumen());
@@ -550,7 +551,6 @@ View.Play.MTaiko = function() {
         this.addChild(this._ri);
     }.bind(this));
 
-
     var blueBitmap = ImageManager.skin('mtaikoflash_blue');
     blueBitmap.addLoadListener(function() {
         this._lo = new View.Animation({
@@ -564,8 +564,27 @@ View.Play.MTaiko = function() {
         this.addChild(this._lo);
         this.addChild(this._ro);
     }.bind(this));
+};
 
+View.Play.MTaiko.prototype = Object.create(Sprite.prototype);
+View.Play.MTaiko.prototype.constructor = View.Play.MTaiko;
 
+View.Play.MTaiko.prototype.update = function() {
+    if(Input.isTriggered('outerL')) { this._lo.reset(); }
+    if(Input.isTriggered('outerR')) { this._ro.reset(); }
+    if(Input.isTriggered('innerL')) { this._li.reset(); }
+    if(Input.isTriggered('innerR')) { this._ri.reset(); }
+    Sprite.prototype.update.call(this);
+};
+
+View.Play.MTaiko.prototype.getBitmap = function(src, type) {
+    var ret = new Bitmap(src.width / 2, src.height);
+    ret.blt(src, src.width * type / 2, 0, ret.width, ret.height, 0, 0);
+    return ret;
+};
+
+View.Play.SfieldFlash = function() {
+    Sprite.call(this);
     this._sfr = new View.Animation({
         x: View.MTAIKO_SFX, y: View.MTAIKO_SFY,
         bitmap: ImageManager.skin('sfieldflash_red'), duration: View.MTAIKO_DURATION
@@ -583,15 +602,10 @@ View.Play.MTaiko = function() {
     this.addChild(this._sfg);
 };
 
-View.Play.MTaiko.prototype = Object.create(Sprite.prototype);
-View.Play.MTaiko.prototype.constructor = View.Play.MTaiko;
+View.Play.SfieldFlash.prototype = Object.create(Sprite.prototype);
+View.Play.SfieldFlash.prototype.constructor = View.Play.SfieldFlash;
 
-View.Play.MTaiko.prototype.update = function() {
-    if(Input.isTriggered('outerL')) { this._lo.reset(); }
-    if(Input.isTriggered('outerR')) { this._ro.reset(); }
-    if(Input.isTriggered('innerL')) { this._li.reset(); }
-    if(Input.isTriggered('innerR')) { this._ri.reset(); }
-
+View.Play.SfieldFlash.prototype.update = function() {
     if(Taiko.isGogotime()) {
         this._sfg.reset();
     } else {
@@ -605,14 +619,7 @@ View.Play.MTaiko.prototype.update = function() {
             this._sfb.visible = false;
         }
     }
-
     Sprite.prototype.update.call(this);
-};
-
-View.Play.MTaiko.prototype.getBitmap = function(src, type) {
-    var ret = new Bitmap(src.width / 2, src.height);
-    ret.blt(src, src.width * type / 2, 0, ret.width, ret.height, 0, 0);
-    return ret;
 };
 
 View.Play.Gauge = function() {
