@@ -2707,8 +2707,6 @@ Sprite.prototype.updateTransform = function() {
     PIXI.Sprite.prototype.updateTransform.call(this);
     this.worldTransform.tx += this._offset.x;
     this.worldTransform.ty += this._offset.y;
-    this.worldTransform.tx = Math.floor(this.worldTransform.tx);
-    this.worldTransform.ty = Math.floor(this.worldTransform.ty);
 };
 
 /**
