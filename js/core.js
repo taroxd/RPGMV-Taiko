@@ -3651,595 +3651,192 @@ WebAudio.prototype._readFourCharacters = function(array, index) {
     return string;
 };
 
-//-----------------------------------------------------------------------------
-/**
- * The static class that handles HTML5 Audio.
- *
- * @class Html5Audio
- * @constructor
- */
-function Html5Audio() {
+function Storage() {
     throw new Error('This is a static class');
 }
 
-Html5Audio._initialized = false;
-Html5Audio._unlocked = false;
-Html5Audio._audioElement = null;
-Html5Audio._gainTweenInterval = null;
-Html5Audio._tweenGain = 0;
-Html5Audio._tweenTargetGain = 0;
-Html5Audio._tweenGainStep = 0;
-Html5Audio._staticSePath = null;
-
-/**
- * Sets up the Html5 Audio.
- *
- * @static
- * @method setup
- * @param {String} url The url of the audio file
- */
-Html5Audio.setup = function (url) {
-    if (!this._initialized) {
-        this.initialize();
-    }
-    this.clear();
-    this._url = url;
-};
-
-/**
- * Initializes the audio system.
- *
- * @static
- * @method initialize
- * @return {Boolean} True if the audio system is available
- */
-Html5Audio.initialize = function () {
-    if (!this._initialized) {
-        if (!this._audioElement) {
-            try {
-                this._audioElement = new Audio();
-            } catch (e) {
-                this._audioElement = null;
-            }
-        }
-        if (!!this._audioElement) this._setupEventHandlers();
-        this._initialized = true;
-    }
-    return !!this._audioElement;
-};
-
-/**
- * @static
- * @method _setupEventHandlers
- * @private
- */
-Html5Audio._setupEventHandlers = function () {
-    document.addEventListener('touchstart', this._onTouchStart.bind(this));
-    document.addEventListener('visibilitychange', this._onVisibilityChange.bind(this));
-    this._audioElement.addEventListener("loadeddata", this._onLoadedData.bind(this));
-    this._audioElement.addEventListener("error", this._onError.bind(this));
-    this._audioElement.addEventListener("ended", this._onEnded.bind(this));
-};
-
-/**
- * @static
- * @method _onTouchStart
- * @private
- */
-Html5Audio._onTouchStart = function () {
-    if (this._audioElement && !this._unlocked) {
-        if (this._isLoading) {
-            this._load(this._url);
-            this._unlocked = true;
-        } else {
-            if (this._staticSePath) {
-                this._audioElement.src = this._staticSePath;
-                this._audioElement.volume = 0;
-                this._audioElement.loop = false;
-                this._audioElement.play();
-                this._unlocked = true;
-            }
-        }
-    }
-};
-
-/**
- * @static
- * @method _onVisibilityChange
- * @private
- */
-Html5Audio._onVisibilityChange = function () {
-    if (document.visibilityState === 'hidden') {
-        this._onHide();
+Storage.save = function(filename, json) {
+    if (this.isLocalMode()) {
+        this.saveToLocalFile(filename, json);
     } else {
-        this._onShow();
+        this.saveToWebStorage(filename, json);
     }
 };
 
-/**
- * @static
- * @method _onLoadedData
- * @private
- */
-Html5Audio._onLoadedData = function () {
-    this._buffered = true;
-    if (this._unlocked) this._onLoad();
-};
-
-/**
- * @static
- * @method _onError
- * @private
- */
-Html5Audio._onError = function () {
-    this._hasError = true;
-};
-
-/**
- * @static
- * @method _onEnded
- * @private
- */
-Html5Audio._onEnded = function () {
-    if (!this._audioElement.loop) {
-        this.stop();
-    }
-};
-
-/**
- * @static
- * @method _onHide
- * @private
- */
-Html5Audio._onHide = function () {
-    this._audioElement.volume = 0;
-    this._tweenGain = 0;
-};
-
-/**
- * @static
- * @method _onShow
- * @private
- */
-Html5Audio._onShow = function () {
-    this.fadeIn(0.5);
-};
-
-/**
- * Clears the audio data.
- *
- * @static
- * @method clear
- */
-Html5Audio.clear = function () {
-    this.stop();
-    this._volume = 1;
-    this._loadListeners = [];
-    this._hasError = false;
-    this._autoPlay = false;
-    this._isLoading = false;
-    this._buffered = false;
-};
-
-/**
- * Set the URL of static se.
- *
- * @static
- * @param {String} url
- */
-Html5Audio.setStaticSe = function (url) {
-    if (!this._initialized) {
-        this.initialize();
-        this.clear();
-    }
-    this._staticSePath = url;
-};
-
-/**
- * [read-only] The url of the audio file.
- *
- * @property url
- * @type String
- */
-Object.defineProperty(Html5Audio, 'url', {
-    get: function () {
-        return Html5Audio._url;
-    },
-    configurable: true
-});
-
-/**
- * The volume of the audio.
- *
- * @property volume
- * @type Number
- */
-Object.defineProperty(Html5Audio, 'volume', {
-    get: function () {
-        return Html5Audio._volume;
-    }.bind(this),
-    set: function (value) {
-        Html5Audio._volume = value;
-        if (Html5Audio._audioElement) {
-            Html5Audio._audioElement.volume = this._volume;
-        }
-    },
-    configurable: true
-});
-
-/**
- * Checks whether the audio data is ready to play.
- *
- * @static
- * @method isReady
- * @return {Boolean} True if the audio data is ready to play
- */
-Html5Audio.isReady = function () {
-    return this._buffered;
-};
-
-/**
- * Checks whether a loading error has occurred.
- *
- * @static
- * @method isError
- * @return {Boolean} True if a loading error has occurred
- */
-Html5Audio.isError = function () {
-    return this._hasError;
-};
-
-/**
- * Checks whether the audio is playing.
- *
- * @static
- * @method isPlaying
- * @return {Boolean} True if the audio is playing
- */
-Html5Audio.isPlaying = function () {
-    return !this._audioElement.paused;
-};
-
-/**
- * Plays the audio.
- *
- * @static
- * @method play
- * @param {Boolean} loop Whether the audio data play in a loop
- * @param {Number} offset The start position to play in seconds
- */
-Html5Audio.play = function (loop, offset) {
-    if (this.isReady()) {
-        offset = offset || 0;
-        this._startPlaying(loop, offset);
-    } else if (Html5Audio._audioElement) {
-        this._autoPlay = true;
-        this.addLoadListener(function () {
-            if (this._autoPlay) {
-                this.play(loop, offset);
-                if (this._gainTweenInterval) {
-                    clearInterval(this._gainTweenInterval);
-                    this._gainTweenInterval = null;
-                }
-            }
-        }.bind(this));
-        if (!this._isLoading) this._load(this._url);
-    }
-};
-
-/**
- * Stops the audio.
- *
- * @static
- * @method stop
- */
-Html5Audio.stop = function () {
-    if (this._audioElement) this._audioElement.pause();
-    this._autoPlay = false;
-    if (this._tweenInterval) {
-        clearInterval(this._tweenInterval);
-        this._tweenInterval = null;
-        this._audioElement.volume = 0;
-    }
-};
-
-/**
- * Performs the audio fade-in.
- *
- * @static
- * @method fadeIn
- * @param {Number} duration Fade-in time in seconds
- */
-Html5Audio.fadeIn = function (duration) {
-    if (this.isReady()) {
-        if (this._audioElement) {
-            this._tweenTargetGain = this._volume;
-            this._tweenGain = 0;
-            this._startGainTween(duration);
-        }
-    } else if (this._autoPlay) {
-        this.addLoadListener(function () {
-            this.fadeIn(duration);
-        }.bind(this));
-    }
-};
-
-/**
- * Performs the audio fade-out.
- *
- * @static
- * @method fadeOut
- * @param {Number} duration Fade-out time in seconds
- */
-Html5Audio.fadeOut = function (duration) {
-    if (this._audioElement) {
-        this._tweenTargetGain = 0;
-        this._tweenGain = this._volume;
-        this._startGainTween(duration);
-    }
-};
-
-/**
- * Gets the seek position of the audio.
- *
- * @static
- * @method seek
- */
-Html5Audio.seek = function () {
-    if (this._audioElement) {
-        return this._audioElement.currentTime;
+Storage.load = function(filename) {
+    if (this.isLocalMode()) {
+        return this.loadFromLocalFile(filename);
     } else {
-        return 0;
+        return this.loadFromWebStorage(filename);
     }
 };
 
-/**
- * Add a callback function that will be called when the audio data is loaded.
- *
- * @static
- * @method addLoadListener
- * @param {Function} listner The callback function
- */
-Html5Audio.addLoadListener = function (listner) {
-    this._loadListeners.push(listner);
-};
-
-/**
- * @static
- * @method _load
- * @param {String} url
- * @private
- */
-Html5Audio._load = function (url) {
-    if (this._audioElement) {
-        this._isLoading = true;
-        this._audioElement.src = url;
-        this._audioElement.load();
+Storage.exists = function(filename) {
+    if (this.isLocalMode()) {
+        return this.localFileExists(filename);
+    } else {
+        return this.webStorageExists(filename);
     }
 };
 
-/**
- * @static
- * @method _startPlaying
- * @param {Boolean} loop
- * @param {Number} offset
- * @private
- */
-Html5Audio._startPlaying = function (loop, offset) {
-    this._audioElement.loop = loop;
-    if (this._gainTweenInterval) {
-        clearInterval(this._gainTweenInterval);
-        this._gainTweenInterval = null;
-    }
-    if (this._audioElement) {
-        this._audioElement.volume = this._volume;
-        this._audioElement.currentTime = offset;
-        this._audioElement.play();
+Storage.remove = function(filename) {
+    if (this.isLocalMode()) {
+        this.removeLocalFile(filename);
+    } else {
+        this.removeWebStorage(filename);
     }
 };
 
-/**
- * @static
- * @method _onLoad
- * @private
- */
-Html5Audio._onLoad = function () {
-    this._isLoading = false;
-    while (this._loadListeners.length > 0) {
-        var listener = this._loadListeners.shift();
-        listener();
+Storage.isLocalMode = function() {
+    return Utils.isNwjs();
+};
+
+Storage.saveToLocalFile = function(filename, data) {
+    var fs = require('fs');
+    var dirPath = this.localFileDirectoryPath();
+    var filePath = this.localFilePath(filename);
+    if (!fs.existsSync(dirPath)) {
+        fs.mkdirSync(dirPath);
+    }
+    fs.writeFileSync(filePath, data);
+};
+
+Storage.loadFromLocalFile = function(filename) {
+    var data;
+    var fs = require('fs');
+    var filePath = this.localFilePath(filename);
+    if (fs.existsSync(filePath)) {
+        data = fs.readFileSync(filePath, { encoding: 'utf8' });
+    }
+    return data;
+};
+
+Storage.localFileExists = function(filename) {
+    var fs = require('fs');
+    return fs.existsSync(this.localFilePath(filename));
+};
+
+Storage.removeLocalFile = function(filename) {
+    var fs = require('fs');
+    var filePath = this.localFilePath(filename);
+    if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
     }
 };
 
-/**
- * @static
- * @method _startGainTween
- * @params {Number} duration
- * @private
- */
-Html5Audio._startGainTween = function (duration) {
-    this._audioElement.volume = this._tweenGain;
-    if (this._gainTweenInterval) {
-        clearInterval(this._gainTweenInterval);
-        this._gainTweenInterval = null;
-    }
-    this._tweenGainStep = (this._tweenTargetGain - this._tweenGain) / (60 * duration);
-    this._gainTweenInterval = setInterval(function () {
-        Html5Audio._applyTweenValue(Html5Audio._tweenTargetGain);
-    }, 1000 / 60);
+Storage.saveToWebStorage = function(filename, json) {
+    var data = LZString.compressToBase64(json);
+    localStorage.setItem(filename, data);
 };
 
-/**
- * @static
- * @method _applyTweenValue
- * @param {Number} volume
- * @private
- */
-Html5Audio._applyTweenValue = function (volume) {
-    Html5Audio._tweenGain += Html5Audio._tweenGainStep;
-    if (Html5Audio._tweenGain < 0 && Html5Audio._tweenGainStep < 0) {
-        Html5Audio._tweenGain = 0;
-    }
-    else if (Html5Audio._tweenGain > volume && Html5Audio._tweenGainStep > 0) {
-        Html5Audio._tweenGain = volume;
-    }
-
-    if (Math.abs(Html5Audio._tweenTargetGain - Html5Audio._tweenGain) < 0.01) {
-        Html5Audio._tweenGain = Html5Audio._tweenTargetGain;
-        clearInterval(Html5Audio._gainTweenInterval);
-        Html5Audio._gainTweenInterval = null;
-    }
-
-    Html5Audio._audioElement.volume = Html5Audio._tweenGain;
+Storage.loadFromWebStorage = function(filename) {
+    var data = localStorage.getItem(filename);
+    return LZString.decompressFromBase64(data);
 };
 
-//-----------------------------------------------------------------------------
-/**
- * The static class that handles JSON with object information.
- *
- * @class JsonEx
- */
-function JsonEx() {
+Storage.webStorageExists = function(filename) {
+    return !!localStorage.getItem(filename);
+};
+
+Storage.removeWebStorage = function(filename) {
+    localStorage.removeItem(filename);
+};
+
+Storage.localFileDirectoryPath = function() {
+    var path = window.location.pathname.replace(/(\/www|)\/[^\/]*$/, '/');
+    if (path.match(/^\/([A-Z]\:)/)) {
+        path = path.slice(1);
+    }
+    return decodeURIComponent(path);
+};
+
+Storage.localFilePath = function(filename) {
+    return this.localFileDirectoryPath() + filename;
+};
+
+Storage.readFile = function(filename, callback) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', filename);
+    xhr.overrideMimeType('text/plain');
+    xhr.onload = function() {
+        if (xhr.status < 400) {
+            callback(null, xhr.response);
+        }
+    }
+    xhr.onerror = callback;
+    xhr.send();
+};
+
+function ImageManager() {
     throw new Error('This is a static class');
 }
 
-/**
- * The maximum depth of objects.
- *
- * @static
- * @property maxDepth
- * @type Number
- * @default 100
- */
-JsonEx.maxDepth = 100;
+ImageManager._cache = {};
 
-/**
- * Converts an object to a JSON string with object information.
- *
- * @static
- * @method stringify
- * @param {Object} object The object to be converted
- * @return {String} The JSON string
- */
-JsonEx.stringify = function(object) {
-    return JSON.stringify(this._encode(object));
+ImageManager.loadBitmap = function(folder, filename) {
+    var path = folder + encodeURIComponent(filename) + '.png';
+    return ImageManager.load(path, function() {
+        return Bitmap.load(path);
+    });
 };
 
-/**
- * Parses a JSON string and reconstructs the corresponding object.
- *
- * @static
- * @method parse
- * @param {String} json The JSON string
- * @return {Object} The reconstructed object
- */
-JsonEx.parse = function(json) {
-    return this._decode(JSON.parse(json));
+ImageManager.load = function(key, loadMethod) {
+    if (!this._cache[key] && loadMethod) {
+        this._cache[key] = loadMethod(key);
+    };
+    return this._cache[key];
 };
 
-/**
- * Makes a deep copy of the specified object.
- *
- * @static
- * @method makeDeepCopy
- * @param {Object} object The object to be copied
- * @return {Object} The copied object
- */
-JsonEx.makeDeepCopy = function(object) {
-    return this.parse(this.stringify(object));
+ImageManager.clear = function() {
+    this._cache = {};
 };
 
-/**
- * @static
- * @method _encode
- * @param {Object} value
- * @param {Number} depth
- * @return {Object}
- * @private
- */
-JsonEx._encode = function(value, depth) {
-    depth = depth || 0;
-    if (++depth >= this.maxDepth) {
-        throw new Error('Object too deep');
-    }
-    var type = Object.prototype.toString.call(value);
-    if (type === '[object Object]' || type === '[object Array]') {
-        var constructorName = this._getConstructorName(value);
-        if (constructorName !== 'Object' && constructorName !== 'Array') {
-            value['@'] = constructorName;
+ImageManager.isReady = function() {
+    for (var key in this._cache) {
+        var bitmap = this._cache[key];
+        if (bitmap.isError()) {
+            throw new Error('Failed to load: ' + bitmap.url);
         }
-        for (var key in value) {
-            if (value.hasOwnProperty(key)) {
-                value[key] = this._encode(value[key], depth + 1);
-            }
+        if (!bitmap.isReady()) {
+            return false;
         }
     }
-    depth--;
-    return value;
+    return true;
 };
 
-/**
- * @static
- * @method _decode
- * @param {Object} value
- * @return {Object}
- * @private
- */
-JsonEx._decode = function(value) {
-    var type = Object.prototype.toString.call(value);
-    if (type === '[object Object]' || type === '[object Array]') {
-        if (value['@']) {
-            var constructor = window[value['@']];
-            if (constructor) {
-                value = this._resetPrototype(value, constructor.prototype);
-            }
-        }
-        for (var key in value) {
-            if (value.hasOwnProperty(key)) {
-                value[key] = this._decode(value[key]);
-            }
-        }
-    }
-    return value;
+ImageManager.skin = function(filename) {
+    return ImageManager.loadBitmap('img/', filename);
 };
 
-/**
- * @static
- * @method _getConstructorName
- * @param {Object} value
- * @return {String}
- * @private
- */
-JsonEx._getConstructorName = function(value) {
-    var name = value.constructor.name;
-    if (name === undefined) {
-        var func = /^\s*function\s*([A-Za-z0-9_$]*)/;
-        name = func.exec(value.constructor)[1];
-    }
-    return name;
+ImageManager.note = function(note) {
+    return this.load("note-"+note.type+"-"+note.width, function() {
+        return note.bitmap;
+    });
 };
 
-/**
- * @static
- * @method _resetPrototype
- * @param {Object} value
- * @param {Object} prototype
- * @return {Object}
- * @private
- */
-JsonEx._resetPrototype = function(value, prototype) {
-    if (Object.setPrototypeOf !== undefined) {
-        Object.setPrototypeOf(value, prototype);
-    } else if ('__proto__' in value) {
-        value.__proto__ = prototype;
-    } else {
-        var newValue = Object.create(prototype);
-        for (var key in value) {
-            if (value.hasOwnProperty(key)) {
-                newValue[key] = value[key];
-            }
+ImageManager.noteHead = function(type) {
+    return this.load("note-"+type+"-"+Taiko.NOTE_SIZE, function() {
+        return Taiko.Note(type, {begin: 0, end: 0}, 0).bitmap;
+    });
+};
+
+ImageManager.clearRolls = function() {
+    for (key in this._cache) {
+
+        if(key.startsWith('note-') &&
+        // string == number; not ===
+        (key[5] == Taiko.ROLL_BIG || key[5] == Taiko.ROLL_SMALL)) {
+            delete this._cache[key];
         }
-        value = newValue;
     }
-    return value;
+};
+
+ImageManager.toBitmap = function(param) {
+    if(typeof(param) === 'string') {
+        return ImageManager.skin(param);
+    }
+    if(param instanceof Bitmap) {
+        return param;
+    }
+    return null;
 };
