@@ -2146,19 +2146,19 @@ Input.clear = function() {
 
 Input.isInnerTriggered = function() {
     return this.isTriggered('innerL') || this.isTriggered('innerR');
-}
+};
 
 Input.isOuterTriggered = function() {
     return this.isTriggered('outerL') || this.isTriggered('outerR');
-}
+};
 
 Input.isBothInnerTriggered = function() {
     return Input.isBothTriggered('innerL', 'innerR');
-}
+};
 
 Input.isBothOuterTriggered = function() {
     return Input.isBothTriggered('outerL', 'outerR');
-}
+};
 
 Input.isBothTriggered = function(key1, key2) {
     var l = this._currentState[key1];
@@ -2172,7 +2172,7 @@ Input.isBothTriggered = function(key1, key2) {
         return l <= Taiko.DOUBLE_TOLERANCE;
     }
     return false;
-}
+};
 
 /**
  * Updates the input data.
