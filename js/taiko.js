@@ -65,9 +65,6 @@ Object.defineProperties(Taiko, {
     score: {
         get: function() { return Taiko._playdata.score; }
     },
-    accuracy: {
-        get: function() { return Taiko._playdata.accuracy; }
-    },
     songvol: {
         get: function() { return Taiko._songdata.songvol; }
     },
@@ -226,19 +223,6 @@ Taiko.Playdata = function() {
     this.normalClear = false;
     this.version = Taiko.VERSION;
 };
-
-
-Object.defineProperty(Taiko.Playdata.prototype, 'accuracy', {
-    get: function() {
-        var count = this.perfect + this.great + this.miss;
-        if(count === 0) {
-            return 0;
-        } else {
-            return (perfect + great / 2) / count;
-        }
-    },
-    enumerable: false
-});
 
 Taiko.Playdata.makeFilename = function(name) {
     return name + '.json';
