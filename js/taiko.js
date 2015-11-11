@@ -856,8 +856,6 @@ Taiko.Note.Base.prototype.isBig = Taiko.Note.Base.prototype.isNormal;
 Taiko.Note.Base.prototype.hit = function() {
 };
 
-Taiko.Note.Base.prototype.performance = Taiko.Note.Base.prototype.hit;
-
 Taiko.Note.Base.prototype.draw = function(bitmap) {
 };
 
