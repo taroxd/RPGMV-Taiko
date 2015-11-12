@@ -583,13 +583,13 @@ Taiko.Songdata.defineHeader("title");
 Taiko.Songdata.defineHeader("subtitle");
 Taiko.Songdata.defineHeader("course");
 
-(function() {
+void function() {
     var divide100 = function(contents) {
         return parseInt(contents) / 100;
     };
     Taiko.Songdata.defineHeader("songvol", divide100);
     Taiko.Songdata.defineHeader("sevol", divide100);
-})();
+}();
 
 Taiko.Songdata.prototype.headerBpm = function() {
     this.invalidInABar('BPMCHANGE');

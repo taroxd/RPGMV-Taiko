@@ -699,7 +699,7 @@ View.Play.NoteFly = function() {
 View.Play.NoteFly.prototype = Object.create(Sprite.prototype);
 View.Play.NoteFly.prototype.constructor = View.Play.NoteFly;
 
-(function() {
+void function() {
 
     function weightedAverage(x, y, wx, wy) {
         return (x * wx + y * wy) / (wx + wy)
@@ -729,7 +729,7 @@ View.Play.NoteFly.prototype.constructor = View.Play.NoteFly;
         }
         return yTable[t];
     };
-})();
+}();
 
 View.Play.NoteFly.prototype.update = function() {
     while(this.removeInvalid()) {}
