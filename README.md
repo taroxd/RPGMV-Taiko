@@ -2,9 +2,9 @@ Taiko no datsujin (RPG Maker MV version)
 ------
 
 ## How To Play ##
-Online: <http://taroxd.github.io/RPGMV-Taiko/>
+**Online**: <http://taroxd.github.io/RPGMV-Taiko/>
 
-Offline:  
+**Offline**:  
 Put your tja and ogg files in the `songs` folder and add it to `data/Songs.json`.  
 About tja files, see [taikojiro](http://www.nicovideo.jp/watch/sm5463901) for more details.  
 All the tja functions are not supported currently.
@@ -23,9 +23,7 @@ Press UP and DOWN arrow keys to select a song. Press LEFT and RIGHT arrow keys t
 | Ka!        |  D / K                      |
 
 ## Description ##
-
 This is an implementation of Taiko with the help of RPG Maker MV.  
 
-## Contribute ##
-
-Just send me a pull request.
+## License ##
+[The MIT License](https://github.com/taroxd/RPGMV-Taiko/blob/master/LICENSE).
