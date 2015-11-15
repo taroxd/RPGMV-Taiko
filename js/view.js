@@ -83,14 +83,14 @@ View.Animation = function(options) {
     this._frameDuration = this._duration = 1;
     this.frameY = 0;
     this._loop = false;
-    if(options) {
-        if(options.x) { this.x = options.x; }
-        if(options.y) { this.y = options.y; }
-        if(options.bitmap) { this.bitmap = ImageManager.toBitmap(options.bitmap); }
-        if(options.frame) { this._maxFrame = options.frame; }
-        if(options.duration) { this._frameDuration = this._duration = options.duration; }
-        if(options.loop) { this._loop = options.loop; }
-        if(options.frameY) { this.frameY = options.frameY; }
+    if (options) {
+        if (options.x) { this.x = options.x; }
+        if (options.y) { this.y = options.y; }
+        if (options.bitmap) { this.bitmap = ImageManager.toBitmap(options.bitmap); }
+        if (options.frame) { this._maxFrame = options.frame; }
+        if (options.duration) { this._frameDuration = this._duration = options.duration; }
+        if (options.loop) { this._loop = options.loop; }
+        if (options.frameY) { this.frameY = options.frameY; }
     }
     this.reset(false);
 };
@@ -105,10 +105,10 @@ Object.defineProperty(View.Animation.prototype, 'frameHeight', {
 
 View.Animation.prototype.update = function() {
     Sprite.prototype.update.call(this);
-    if(!this.visible || !this.bitmap) {
+    if (!this.visible || !this.bitmap) {
         return;
     }
-    if(this._duration > 0) {
+    if (this._duration > 0) {
         --this._duration;
     } else {
         this.setCurrentFrame();
@@ -120,7 +120,7 @@ View.Animation.prototype.isLoop = function() {
 };
 
 View.Animation.prototype.reset = function(toShow) {
-    if(toShow === undefined) { toShow = true; }
+    if (toShow === undefined) { toShow = true; }
     this._frameCount = 0;
     this.setCurrentFrame();
     this.visible = toShow;
@@ -130,14 +130,14 @@ View.Animation.prototype.setCurrentFrame = function() {
     var w = this.bitmap.width / this._maxFrame;
     this.setFrame(this._frameCount * w, this.frameY, w, this.frameHeight);
     this._duration = this._frameDuration;
-    if(this._loop) {
-        if(this._frameCount === this._maxFrame - 1) {
+    if (this._loop) {
+        if (this._frameCount === this._maxFrame - 1) {
             this._frameCount = 0;
         } else {
             ++this._frameCount;
         }
     } else {
-        if(this._frameCount === this._maxFrame) {
+        if (this._frameCount === this._maxFrame) {
             this.visible = false;
         } else {
             ++this._frameCount;
@@ -165,12 +165,12 @@ View.Digit.prototype.show = function(num) {
 View.Number = function(options) {
     Sprite.call(this);
     this.interval = 0;
-    if(options) {
-        if(options.x) { this.x = options.x; }
-        if(options.y) { this.y = options.y; }
-        if(options.interval) { this.interval = options.interval; }
-        if(options.alignment) { this.alignment = options.alignment; }
-        if(options.bitmap) { this._digitBitmap = ImageManager.toBitmap(options.bitmap); }
+    if (options) {
+        if (options.x) { this.x = options.x; }
+        if (options.y) { this.y = options.y; }
+        if (options.interval) { this.interval = options.interval; }
+        if (options.alignment) { this.alignment = options.alignment; }
+        if (options.bitmap) { this._digitBitmap = ImageManager.toBitmap(options.bitmap); }
     }
 };
 
@@ -183,7 +183,7 @@ View.Number.prototype.clear = function() {
 };
 
 View.Number.prototype.show = function(num) {
-    if(num === this._numNow) { return; }
+    if (num === this._numNow) { return; }
     this._numNow = num;
     this.clear();
     var digitWidth = this._digitBitmap.width / 10 + this.interval;
@@ -232,7 +232,7 @@ View.SongList.Songs.LINE_HEIGHT = 30;
 View.SongList.Songs.SCORE_HEIGHT = 15;
 
 View.SongList.Songs.prototype.update = function() {
-    if(this._songdata !== Scene.scene.songdata()) { this.refresh(); }
+    if (this._songdata !== Scene.scene.songdata()) { this.refresh(); }
 };
 
 View.SongList.Songs.prototype.refresh = function() {
@@ -248,26 +248,26 @@ View.SongList.Songs.prototype.refresh = function() {
     this.drawSimpleInfo(this._songdata, 120, 110);
     this.drawPlaydata(Taiko.Playdata.load(this._songdata.name));
 
-    for(i = 1; i <= 3; ++i) {
+    for (i = 1; i <= 3; ++i) {
         this.drawSimpleInfo(Scene.scene.songdata(i),
             60, 125 + i * View.SongList.Songs.LINE_HEIGHT);
     }
 };
 
 View.SongList.Songs.prototype.drawSimpleInfo = function(songdata, x, y, width, height) {
-    if(!width) { width = 340; }
-    if(!height) { height = View.SongList.Songs.LINE_HEIGHT; }
+    if (!width) { width = 340; }
+    if (!height) { height = View.SongList.Songs.LINE_HEIGHT; }
     this.bitmap.drawText(songdata.title, x, y, width, height);
     this.bitmap.drawText("★" + songdata.level, x, y, width, height, "right");
 };
 
 View.SongList.Songs.prototype.drawPlaydata = function(playdata) {
     var crownType;
-    if(playdata.isEmpty()) {
+    if (playdata.isEmpty()) {
         crownType = 0;
-    } else if(playdata.miss === 0) {
+    } else if (playdata.miss === 0) {
         crownType = 3;
-    } else if(playdata.normalClear) {
+    } else if (playdata.normalClear) {
         crownType = 2;
     } else {
         crownType = 1;
@@ -328,13 +328,13 @@ View.Play.Fumen.prototype.constructor = View.Play.Fumen;
 
 View.Play.Fumen.prototype.update = function() {
     this.pushNotes();
-    while(this.removeInvalid()) {}
+    while (this.removeInvalid()) {}
     Sprite.prototype.update.call(this);
 };
 
 View.Play.Fumen.prototype.removeInvalid = function() {
     var view = this.children[0];
-    if(!view || view.visible) {
+    if (!view || view.visible) {
         return false;
     }
     return this.removeChildAt(0);
@@ -342,9 +342,9 @@ View.Play.Fumen.prototype.removeInvalid = function() {
 
 View.Play.Fumen.prototype.pushNotes = function() {
     var note;
-    while(true) {
+    while (true) {
         note = this._notes[0];
-        if(!note || note.appearTime > Taiko.playTime) {
+        if (!note || note.appearTime > Taiko.playTime) {
             break;
         }
         var view = new View.Play.Fumen.Note(note);
@@ -370,7 +370,7 @@ View.Play.Fumen.Note.prototype.isValid = function() {
 
 View.Play.Fumen.Note.prototype.update = function() {
     this.visible = this.isValid();
-    if(this.visible) {
+    if (this.visible) {
         this.x = this._note.x;
         this.z = this._note.z;
     }
@@ -395,13 +395,13 @@ View.Play.Score.prototype.constructor = View.Play.Score;
 
 View.Play.Score.prototype.update = function() {
     --this.clearTime;
-    if(this._score !== Taiko.score) {
+    if (this._score !== Taiko.score) {
         var scoreLast = this._score;
         this._score = Taiko.score;
         this._scoreView.show(this._score);
         this._scoreDiffView.show(this._score - scoreLast);
         this._clearTime = 40;
-    } else if(this._clearTime < 0) {
+    } else if (this._clearTime < 0) {
         this._scoreDiffView.clear();
     }
     Sprite.prototype.update.call(this);
@@ -417,7 +417,7 @@ View.Play.Score.Diff.prototype.constructor = View.Play.Score.Diff;
 
 View.Play.Score.Diff.prototype.update = function() {
     View.Number.prototype.update.call(this);
-    if(this._changeEffect) {
+    if (this._changeEffect) {
         this.children.forEach(function(digit) { digit.x += 2; });
         --this._changeEffect;
     }
@@ -443,17 +443,17 @@ Object.defineProperty(View.Play.Judgement.prototype, 'frameHeight', {
 
 View.Play.Judgement.prototype.update = function() {
     View.Animation.prototype.update.call(this);
-    if(!this.visible) {
+    if (!this.visible) {
         return;
     }
-    if(this._changeEffect > 0) {
+    if (this._changeEffect > 0) {
         this.y -= 2;
         this._changeEffect -= 2;
     }
 };
 
 View.Play.Judgement.prototype.resetAndShow = function(note) {
-    if(!note.isNormal()) {
+    if (!note.isNormal()) {
         return;
     }
     var type;
@@ -509,21 +509,21 @@ View.Play.Combo.prototype = Object.create(Sprite.prototype);
 View.Play.Combo.prototype.constructor = View.Play.Score.Diff;
 
 View.Play.Combo.prototype.update = function() {
-    if(this._flower.visible) {
+    if (this._flower.visible) {
         this._flower.update();
     }
 };
 
 View.Play.Combo.prototype.updateCombo = function() {
     var combo = Taiko.combo;
-    if(combo < 10) {
+    if (combo < 10) {
         this.visible = false;
     } else {
         this.visible = true;
-        if(combo % 50 == 0) {
+        if (combo % 50 == 0) {
             this._flower.reset();
         }
-        if(combo < 50) {
+        if (combo < 50) {
             this._combo1.show(combo);
             this._combo2.clear();
         } else {
@@ -570,10 +570,10 @@ View.Play.MTaiko.prototype = Object.create(Sprite.prototype);
 View.Play.MTaiko.prototype.constructor = View.Play.MTaiko;
 
 View.Play.MTaiko.prototype.update = function() {
-    if(Input.isTriggered('outerL')) { this._lo.reset(); }
-    if(Input.isTriggered('outerR')) { this._ro.reset(); }
-    if(Input.isTriggered('innerL')) { this._li.reset(); }
-    if(Input.isTriggered('innerR')) { this._ri.reset(); }
+    if (Input.isTriggered('outerL')) { this._lo.reset(); }
+    if (Input.isTriggered('outerR')) { this._ro.reset(); }
+    if (Input.isTriggered('innerL')) { this._li.reset(); }
+    if (Input.isTriggered('innerR')) { this._ri.reset(); }
     Sprite.prototype.update.call(this);
 };
 
@@ -606,15 +606,15 @@ View.Play.SfieldFlash.prototype = Object.create(Sprite.prototype);
 View.Play.SfieldFlash.prototype.constructor = View.Play.SfieldFlash;
 
 View.Play.SfieldFlash.prototype.update = function() {
-    if(Taiko.isGogotime()) {
+    if (Taiko.isGogotime()) {
         this._sfg.reset();
     } else {
         this._sfg.visible = false;
-        if(Input.isOuterTriggered()) {
+        if (Input.isOuterTriggered()) {
             this._sfr.visible = false;
             this._sfb.reset();
         }
-        if(Input.isInnerTriggered()) {
+        if (Input.isInnerTriggered()) {
             this._sfr.reset();
             this._sfb.visible = false;
         }
@@ -639,7 +639,7 @@ View.Play.Gauge = function() {
     this._empty.setFrame(0, 0, View.Play.Gauge.WIDTH, View.Play.Gauge.HEIGHT);
 
     Taiko.addHitListener(function(note) {
-        if(note.isNormal()) { this.refresh(); }
+        if (note.isNormal()) { this.refresh(); }
     }.bind(this));
 
     this.addChild(this._empty);
@@ -663,7 +663,7 @@ View.Play.Gauge.prototype.refresh = function() {
     var rate = Taiko.gauge.rate;
     var nRate = Taiko.Gauge.NORMAL_RATE;
 
-    if(rate < nRate) {
+    if (rate < nRate) {
         fillW = View.Play.Gauge.NORMAL_X * rate / nRate;
     } else {
         fillW = View.Play.Gauge.WIDTH -
@@ -674,7 +674,7 @@ View.Play.Gauge.prototype.refresh = function() {
 
     var y, src;
 
-    if(Taiko.gauge.isMax()) {
+    if (Taiko.gauge.isMax()) {
         y = View.Play.Gauge.HEIGHT * 3;
         src = 'soul-2';
     } else {
@@ -690,7 +690,7 @@ View.Play.Gauge.prototype.refresh = function() {
 View.Play.NoteFly = function() {
     Sprite.call(this);
     Taiko.addHitListener(function(note) {
-        if(note.performance !== Taiko.Judgement.MISS && !note.isBalloon()) {
+        if (note.performance !== Taiko.Judgement.MISS && !note.isBalloon()) {
             this.addChild(new View.Play.NoteFly.Note(note));
         };
     }.bind(this));
@@ -716,7 +716,7 @@ void function() {
 
     var xTable = [];
     View.Play.NoteFly.getX = function(t) {
-        if(xTable[t] === undefined) {
+        if (xTable[t] === undefined) {
             xTable[t] = weightedAverage(x0, x1, d - t, t);
         }
         return xTable[t];
@@ -724,7 +724,7 @@ void function() {
 
     var yTable = [];
     View.Play.NoteFly.getY = function(t) {
-        if(yTable[t] === undefined) {
+        if (yTable[t] === undefined) {
             yTable[t] = weightedAverage(y0, y1, d - t, t) - t * (d - t) * a;
         }
         return yTable[t];
@@ -732,13 +732,13 @@ void function() {
 }();
 
 View.Play.NoteFly.prototype.update = function() {
-    while(this.removeInvalid()) {}
+    while (this.removeInvalid()) {}
     Sprite.prototype.update.call(this);
 };
 
 View.Play.NoteFly.prototype.removeInvalid = function() {
     var view = this.children[0];
-    if(!view || view.visible) {
+    if (!view || view.visible) {
         return false;
     }
     return this.removeChildAt(0);
@@ -755,7 +755,7 @@ View.Play.NoteFly.Note.prototype = Object.create(Sprite.prototype);
 View.Play.NoteFly.Note.prototype.constructor = View.Play.NoteFly.Note;
 
 View.Play.NoteFly.Note.prototype.update = function() {
-    if(this._t < View.NOTE_FLY_DURATION) {
+    if (this._t < View.NOTE_FLY_DURATION) {
         this.x = View.Play.NoteFly.getX(this._t);
         this.y = View.Play.NoteFly.getY(this._t);
         ++this._t;
@@ -803,10 +803,10 @@ View.Play.Gogosplash.prototype.constructor = View.Play.Gogosplash;
 
 View.Play.Gogosplash.prototype.update = function() {
     var isGogotime = Taiko.isGogotime();
-    if(this._gogotime && !isGogotime) {
+    if (this._gogotime && !isGogotime) {
         this.visible = false;
         this._gogotime = false;
-    } else if(!this._gogotime && isGogotime) {
+    } else if (!this._gogotime && isGogotime) {
         this.visible = true;
         this._gogotime = true;
         this.children.slice(1).forEach(function(splash) {
@@ -814,7 +814,7 @@ View.Play.Gogosplash.prototype.update = function() {
         });
     }
 
-    if(this.visible) {
+    if (this.visible) {
         Sprite.prototype.update.call(this);
     }
 };
@@ -840,7 +840,7 @@ View.Play.Explosion.create = function() {
     });
 
     Taiko.addHitListener(function(note) {
-        if(note.performance === Taiko.Judgement.MISS || !note.isNormal()) {
+        if (note.performance === Taiko.Judgement.MISS || !note.isNormal()) {
             return;
         }
         type = note.performance === Taiko.Judgement.PERFECT ? 0 : 1;

@@ -287,14 +287,14 @@ Scene.SongList.prototype.constructor = Scene.SongList;
 Scene.SongList.INDEX_FILENAME = 'data/SONGLIST_INDEX';
 
 Scene.SongList.prototype.songdata = function(offset) {
-    if(offset === undefined) { offset = 0; }
+    if (offset === undefined) { offset = 0; }
     return this._songlist[this.songlistIndex(offset)];
 };
 
 Scene.SongList.prototype.create = function() {
     Graphics.resize(480, 272);
     var json = Storage.load(Scene.SongList.INDEX_FILENAME);
-    if(json) {
+    if (json) {
         var data = JSON.parse(json);
         this._index = data[0];
         this._courses = data[1];
@@ -304,12 +304,12 @@ Scene.SongList.prototype.create = function() {
     }
 
     Storage.readFile('data/Songs.json', function(e, json) {
-        if(e) { throw e; }
+        if (e) { throw e; }
         this._songlist = JSON.parse(json).map(function(name) {
             return new Taiko.Songdata(name);
         });
 
-        if(this._songlist.length === 0) {
+        if (this._songlist.length === 0) {
             throw "no song defined in json";
         }
 
@@ -340,45 +340,45 @@ Scene.SongList.prototype.terminate = function() {
 Scene.SongList.prototype.update = function() {
     Scene.Base.prototype.update.call(this);
     this.updateIndex();
-    if(Input.isTriggered("right")) {
+    if (Input.isTriggered("right")) {
         this.updateCourse(1);
-    } else if(Input.isTriggered("left")) {
+    } else if (Input.isTriggered("left")) {
         this.updateCourse(-1);
     }
-    if(!Scene.isSceneChanging()) {
+    if (!Scene.isSceneChanging()) {
         this.updateScene();
     }
 };
 
 Scene.SongList.prototype.playDemo = function() {
     var songdata = this.songdata();
-    if(songdata.isReady()) {
+    if (songdata.isReady()) {
         Taiko.Song.play(songdata.wave, songdata.songvol, true, songdata.demostart);
     }
 };
 
 Scene.SongList.prototype.songlistIndex = function(offset) {
     var index = this._index;
-    if(offset) { index += offset; }
+    if (offset) { index += offset; }
     return this.adjustIndex(index);
 };
 
 Scene.SongList.prototype.adjustIndex = function(index) {
     index %= this._songlist.length;
-    if(index < 0) { index += this._songlist.length; }
+    if (index < 0) { index += this._songlist.length; }
     return index;
 };
 
 Scene.SongList.prototype.updateIndex = function() {
     var lastIndex = this._index
-    if(Input.isRepeated('up')) {
+    if (Input.isRepeated('up')) {
         --this._index;
         this._index = this.adjustIndex(this._index);
-    } else if(Input.isRepeated('down')) {
+    } else if (Input.isRepeated('down')) {
         ++this._index;
         this._index = this.adjustIndex(this._index);
     }
-    if(lastIndex !== this._index) {
+    if (lastIndex !== this._index) {
         Taiko.SE.DONG.play();
         this.playDemo();
         this.saveIndex();
@@ -391,9 +391,9 @@ Scene.SongList.prototype.saveIndex = function() {
 };
 
 Scene.SongList.prototype.updateCourse = function(courseDiff) {
-    if(this.selectCourse(this._index, courseDiff)) {
+    if (this.selectCourse(this._index, courseDiff)) {
         var key = this.songdata().name;
-        if(key === undefined) {
+        if (key === undefined) {
             this._courses[key] = 0;
         }
         this._courses[key] += courseDiff;
@@ -414,7 +414,7 @@ Scene.SongList.prototype.selectCourse = function(index, courseDiff) {
 };
 
 Scene.SongList.prototype.updateScene = function() {
-    if(Input.isTriggered('ok')) {
+    if (Input.isTriggered('ok')) {
         Taiko.SE.DONG.play();
         Taiko.setup(this.songdata());
         Scene.goto(Scene.Play);
@@ -437,7 +437,7 @@ Scene.Play.PendingNote = function(notes, note, frame) {
 
 Scene.Play.PendingNote.prototype.update = function() {
     --this.frame;
-    if(this.frame === 0) {
+    if (this.frame === 0) {
         Taiko.hit(this.note);
         this.notes.shift();
     }
@@ -449,19 +449,19 @@ Scene.Play.prototype.create = function() {
 
 Scene.Play.prototype.update = function() {
     Scene.Base.prototype.update.call(this);
-    if(Taiko.isStarted()) {
+    if (Taiko.isStarted()) {
         this.updateAfterStarted();
     } else {
         this.updateBeforeStarted();
     }
     this.updateSE();
-    if(!Scene.isSceneChanging()) {
+    if (!Scene.isSceneChanging()) {
         this.updateScene();
     }
 };
 
 Scene.Play.prototype.updateBeforeStarted = function() {
-    if(Input.isTriggered('ok')) { Taiko.tryStart(); }
+    if (Input.isTriggered('ok')) { Taiko.tryStart(); }
 };
 
 Scene.Play.prototype.updateAfterStarted = function() {
@@ -471,13 +471,13 @@ Scene.Play.prototype.updateAfterStarted = function() {
 };
 
 Scene.Play.prototype.updateHit = function() {
-    if(this._pendingNote) {
+    if (this._pendingNote) {
         this._pendingNote.update();
     }
-    if(Input.isInnerTriggered()) {
+    if (Input.isInnerTriggered()) {
         this.updateInner();
     }
-    if(Input.isOuterTriggered()) {
+    if (Input.isOuterTriggered()) {
         this.updateOuter();
     }
 };
@@ -495,13 +495,13 @@ Scene.Play.prototype.updateOuter = function() {
 
 Scene.Play.prototype.findNoteAndHit = function(notes, isDouble) {
     var note = notes[0];
-    if(!note || !note.performance) {
+    if (!note || !note.performance) {
         return false;
     };
     note.double = isDouble;
-    if(this._pendingNote && this._pendingNote.note === note) {
+    if (this._pendingNote && this._pendingNote.note === note) {
         this._pendingNote = null;
-    } else if(note.isBig() && !isDouble) {
+    } else if (note.isBig() && !isDouble) {
         this._pendingNote = new Scene.Play.PendingNote(notes, note, Taiko.DOUBLE_TOLERANCE);
         return false;
     }
@@ -513,7 +513,7 @@ Scene.Play.prototype.findNoteAndHit = function(notes, isDouble) {
 
 Scene.Play.prototype.findRollAndHit = function(notes) {
     var note = notes[0];
-    if(!note || !note.isHitting()) {
+    if (!note || !note.isHitting()) {
         return false;
     }
     Taiko.hit(note);
@@ -528,25 +528,25 @@ Scene.Play.prototype.checkMiss = function() {
 };
 
 Scene.Play.prototype.shiftMissedNotes = function(notes, isHit) {
-    while((note = notes[0]) && note.isOver()) {
+    while ((note = notes[0]) && note.isOver()) {
         notes.shift();
-        if(isHit) {
+        if (isHit) {
             Taiko.hit(note);
         }
     }
 };
 
 Scene.Play.prototype.updateSE = function() {
-    if(Input.isInnerTriggered()) {
+    if (Input.isInnerTriggered()) {
         Taiko.SE.DONG.play();
     }
-    if(Input.isOuterTriggered()) {
+    if (Input.isOuterTriggered()) {
         Taiko.SE.KA.play();
     }
 };
 
 Scene.Play.prototype.updateScene = function() {
-    if(Input.isTriggered('escape')) {
+    if (Input.isTriggered('escape')) {
         Taiko.stop();
         Scene.goto(Scene.SongList);
     }
