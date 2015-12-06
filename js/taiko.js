@@ -278,7 +278,7 @@ Taiko.Songdata.EOFError = "EOFError "
 
 Taiko.Songdata.Range = function(left, right) {
     var ret = function(n) {
-         return left <= n && n <= right;
+        return left <= n && n <= right;
     };
 
     ret.begin = left;
