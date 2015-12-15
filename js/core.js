@@ -1,91 +1,32 @@
 
-//-----------------------------------------------------------------------------
-/**
- * The static class that defines utility methods.
- *
- * @class Utils
- */
-function Utils() {
-    throw new Error('This is a static class');
-}
+window.Utils = {
+    RPGMAKER_NAME: 'MV'
+};
 
-/**
- * The name of the RPG Maker. 'MV' in the current version.
- *
- * @static
- * @property RPGMAKER_NAME
- * @type String
- * @final
- */
-Utils.RPGMAKER_NAME = 'MV';
-
-/**
- * Checks whether the option is in the query string.
- *
- * @static
- * @method isOptionValid
- * @param {String} name The option name
- * @return {Boolean} True if the option is in the query string
- */
 Utils.isOptionValid = function(name) {
     return location.search.slice(1).split('&').indexOf(name) >= 0;
 };
 
-/**
- * Checks whether the platform is NW.js.
- *
- * @static
- * @method isNwjs
- * @return {Boolean} True if the platform is NW.js
- */
 Utils.isNwjs = function() {
     return typeof require === 'function' && typeof process === 'object';
 };
 
-/**
- * Checks whether the platform is a mobile device.
- *
- * @static
- * @method isMobileDevice
- * @return {Boolean} True if the platform is a mobile device
- */
 Utils.isMobileDevice = function() {
     var r = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
     return !!navigator.userAgent.match(r);
 };
 
-/**
- * Checks whether the browser is Mobile Safari.
- *
- * @static
- * @method isMobileSafari
- * @return {Boolean} True if the browser is Mobile Safari
- */
 Utils.isMobileSafari = function() {
     var agent = navigator.userAgent;
     return !!(agent.match(/iPhone|iPad|iPod/) && agent.match(/AppleWebKit/) &&
               !agent.match('CriOS'));
 };
 
-/**
- * Checks whether the browser is Android Chrome.
- *
- * @static
- * @method isAndroidChrome
- * @return {Boolean} True if the browser is Android Chrome
- */
 Utils.isAndroidChrome = function() {
     var agent = navigator.userAgent;
     return !!(agent.match(/Android/) && agent.match(/Chrome/));
 };
 
-/**
- * Checks whether the browser can read files in the game folder.
- *
- * @static
- * @method canReadGameFiles
- * @return {Boolean} True if the browser can read files in the game folder
- */
 Utils.canReadGameFiles = function() {
     var scripts = document.getElementsByTagName('script');
     var lastScript = scripts[scripts.length - 1];
@@ -100,16 +41,6 @@ Utils.canReadGameFiles = function() {
     }
 };
 
-/**
- * Makes a CSS color string from RGB values.
- *
- * @static
- * @method rgbToCssColor
- * @param {Number} r The red value in the range (0, 255)
- * @param {Number} g The green value in the range (0, 255)
- * @param {Number} b The blue value in the range (0, 255)
- * @return {String} CSS color string
- */
 Utils.rgbToCssColor = function(r, g, b) {
     r = Math.round(r);
     g = Math.round(g);
@@ -117,119 +48,20 @@ Utils.rgbToCssColor = function(r, g, b) {
     return 'rgb(' + r + ',' + g + ',' + b + ')';
 };
 
-Utils.clamp = function(a, b) {
-    return function(n) {
-        if(a > n) {
-            return a;
-        }
-        if(n > b) {
-            return b;
-        }
-        return n;
-    };
+Utils.clamp = function(a, b, n) {
+    if(a > n) {
+        return a;
+    }
+    if(n > b) {
+        return b;
+    }
+    return n;
 };
 
-//-----------------------------------------------------------------------------
-/**
- * The point class.
- *
- * @class Point
- * @constructor
- * @param {Number} x The x coordinate
- * @param {Number} y The y coordinate
- */
-function Point() {
-    this.initialize.apply(this, arguments);
-}
+window.Point = PIXI.Point;
+window.Rectangle = PIXI.Rectangle;
+Rectangle.emptyRectangle = PIXI.EmptyRectangle;
 
-Point.prototype = Object.create(PIXI.Point.prototype);
-Point.prototype.constructor = Point;
-
-Point.prototype.initialize = function(x, y) {
-    PIXI.Point.call(this, x, y);
-};
-
-/**
- * The x coordinate.
- *
- * @property x
- * @type Number
- */
-
-/**
- * The y coordinate.
- *
- * @property y
- * @type Number
- */
-
-//-----------------------------------------------------------------------------
-/**
- * The rectangle class.
- *
- * @class Rectangle
- * @constructor
- * @param {Number} x The x coordinate for the upper-left corner
- * @param {Number} y The y coordinate for the upper-left corner
- * @param {Number} width The width of the rectangle
- * @param {Number} height The height of the rectangle
- */
-function Rectangle() {
-    this.initialize.apply(this, arguments);
-}
-
-Rectangle.prototype = Object.create(PIXI.Rectangle.prototype);
-Rectangle.prototype.constructor = Rectangle;
-
-Rectangle.prototype.initialize = function(x, y, width, height) {
-    PIXI.Rectangle.call(this, x, y, width, height);
-};
-
-/**
- * @static
- * @property emptyRectangle
- * @type Rectangle
- * @private
- */
-Rectangle.emptyRectangle = new Rectangle(0, 0, 0, 0);
-
-/**
- * The x coordinate for the upper-left corner.
- *
- * @property x
- * @type Number
- */
-
-/**
- * The y coordinate for the upper-left corner.
- *
- * @property y
- * @type Number
- */
-
-/**
- * The width of the rectangle.
- *
- * @property width
- * @type Number
- */
-
-/**
- * The height of the rectangle.
- *
- * @property height
- * @type Number
- */
-
-//-----------------------------------------------------------------------------
-/**
- * The basic object that represents an image.
- *
- * @class Bitmap
- * @constructor
- * @param {Number} width The width of the bitmap
- * @param {Number} height The height of the bitmap
- */
 function Bitmap() {
     this.initialize.apply(this, arguments);
 }
@@ -958,9 +790,14 @@ Bitmap.prototype._setDirty = function() {
  *
  * @class Graphics
  */
-function Graphics() {
-    throw new Error('This is a static class');
-}
+window.Graphics = {
+    frameCount: 0,
+
+    BLEND_NORMAL: 0,
+    BLEND_ADD: 1,
+    BLEND_MULTIPLY: 2,
+    BLEND_SCREEN: 3
+};
 
 /**
  * Initializes the graphics system.
@@ -1010,54 +847,7 @@ Graphics.initialize = function(width, height, type) {
     this._setupEventHandlers();
 };
 
-/**
- * The total frame count of the game screen.
- *
- * @static
- * @property frameCount
- * @type Number
- */
-Graphics.frameCount     = 0;
 
-/**
- * The alias of PIXI.blendModes.NORMAL.
- *
- * @static
- * @property BLEND_NORMAL
- * @type Number
- * @final
- */
-Graphics.BLEND_NORMAL   = 0;
-
-/**
- * The alias of PIXI.blendModes.ADD.
- *
- * @static
- * @property BLEND_ADD
- * @type Number
- * @final
- */
-Graphics.BLEND_ADD      = 1;
-
-/**
- * The alias of PIXI.blendModes.MULTIPLY.
- *
- * @static
- * @property BLEND_MULTIPLY
- * @type Number
- * @final
- */
-Graphics.BLEND_MULTIPLY = 2;
-
-/**
- * The alias of PIXI.blendModes.SCREEN.
- *
- * @static
- * @property BLEND_SCREEN
- * @type Number
- * @final
- */
-Graphics.BLEND_SCREEN   = 3;
 
 /**
  * Marks the beginning of each frame for FPSMeter.
@@ -1703,7 +1493,7 @@ Graphics._paintUpperCanvas = function() {
         var context = this._upperCanvas.getContext('2d');
         var dx = (this._width - this._loadingImage.width) / 2;
         var dy = (this._height - this._loadingImage.height) / 2;
-        var alpha = Utils.clamp(0, 1)((this._loadingCount - 20) / 30);
+        var alpha = Utils.clamp(0, 1, (this._loadingCount - 20) / 30);
         context.save();
         context.globalAlpha = alpha;
         context.drawImage(this._loadingImage, dx, dy);
@@ -2073,9 +1863,10 @@ Graphics._cancelFullScreen = function() {
  *
  * @class Input
  */
-function Input() {
-    throw new Error('This is a static class');
-}
+window.Input = {
+    keyRepeatWait: 24,
+    keyRepeatInterval: 6
+};
 
 /**
  * Initializes the input system.
@@ -2088,24 +1879,6 @@ Input.initialize = function() {
     this._wrapNwjsAlert();
     this._setupEventHandlers();
 };
-
-/**
- * The wait time of the key repeat in frames.
- *
- * @static
- * @property keyRepeatWait
- * @type Number
- */
-Input.keyRepeatWait = 24;
-
-/**
- * The interval of the key repeat in frames.
- *
- * @static
- * @property keyRepeatInterval
- * @type Number
- */
-Input.keyRepeatInterval = 6;
 
 /**
  * A hash table to convert from a virtual key code to a mapped key name.
@@ -2430,7 +2203,7 @@ Object.defineProperty(Sprite.prototype, 'opacity', {
         return this.alpha * 255;
     },
     set: function(value) {
-        this.alpha = Utils.clamp(0, 255)(value) / 255;
+        this.alpha = Utils.clamp(0, 255, value) / 255;
     },
     configurable: true
 });
@@ -2556,10 +2329,10 @@ Sprite.prototype._refresh = function() {
     var frameH = Math.floor(this._frame.height);
     var bitmapW = this._bitmap ? this._bitmap.width : 0;
     var bitmapH = this._bitmap ? this._bitmap.height : 0;
-    var realX = Utils.clamp(0, bitmapW)(frameX);
-    var realY = Utils.clamp(0, bitmapH)(frameY);
-    var realW = Utils.clamp(0, bitmapW - realX)(frameW - realX + frameX);
-    var realH = Utils.clamp(0, bitmapH - realY)(frameH - realY + frameY);
+    var realX = Utils.clamp(0, bitmapW, frameX);
+    var realY = Utils.clamp(0, bitmapH, frameY);
+    var realW = Utils.clamp(0, bitmapW - realX, frameW - realX + frameX);
+    var realH = Utils.clamp(0, bitmapH - realY, frameH - realY + frameY);
 
     this._realFrame.x = realX;
     this._realFrame.y = realY;
@@ -2770,111 +2543,6 @@ Sprite.prototype._renderWebGL = function(renderSession) {
         }
     }
 };
-
-// The important members from Pixi.js
-
-/**
- * The visibility of the sprite.
- *
- * @property visible
- * @type Boolean
- */
-
-/**
- * The x coordinate of the sprite.
- *
- * @property x
- * @type Number
- */
-
-/**
- * The y coordinate of the sprite.
- *
- * @property y
- * @type Number
- */
-
-/**
- * The origin point of the sprite. (0,0) to (1,1).
- *
- * @property anchor
- * @type Point
- */
-
-/**
- * The scale factor of the sprite.
- *
- * @property scale
- * @type Point
- */
-
-/**
- * The rotation of the sprite in radians.
- *
- * @property rotation
- * @type Number
- */
-
-/**
- * The blend mode to be applied to the sprite.
- *
- * @property blendMode
- * @type Number
- */
-
-/**
- * Sets the filters for the sprite.
- *
- * @property filters
- * @type Array
- */
-
-/**
- * [read-only] The array of children of the sprite.
- *
- * @property children
- * @type Array
- */
-
-/**
- * [read-only] The object that contains the sprite.
- *
- * @property parent
- * @type Object
- */
-
-/**
- * Adds a child to the container.
- *
- * @method addChild
- * @param {Object} child The child to add
- * @return {Object} The child that was added
- */
-
-/**
- * Adds a child to the container at a specified index.
- *
- * @method addChildAt
- * @param {Object} child The child to add
- * @param {Number} index The index to place the child in
- * @return {Object} The child that was added
- */
-
-/**
- * Removes a child from the container.
- *
- * @method removeChild
- * @param {Object} child The child to remove
- * @return {Object} The child that was removed
- */
-
-/**
- * Removes a child from the specified index position.
- *
- * @method removeChildAt
- * @param {Number} index The index to get the child from
- * @return {Object} The child that was removed
- */
 
 function Stage() {
     this.initialize.apply(this, arguments);
@@ -3651,9 +3319,7 @@ WebAudio.prototype._readFourCharacters = function(array, index) {
     return string;
 };
 
-function Storage() {
-    throw new Error('This is a static class');
-}
+window.Storage = {};
 
 Storage.save = function(filename, json) {
     if (this.isLocalMode()) {
@@ -3767,11 +3433,9 @@ Storage.readFile = function(filename, callback) {
     xhr.send();
 };
 
-function ImageManager() {
-    throw new Error('This is a static class');
-}
-
-ImageManager._cache = {};
+window.ImageManager = {
+    _cache: {}
+};
 
 ImageManager.loadBitmap = function(folder, filename) {
     var path = folder + encodeURIComponent(filename) + '.png';

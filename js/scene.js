@@ -1,15 +1,13 @@
-function Scene() {
-    throw new Error('This is a static class');
+window.Scene = {
+    _scene: null,
+    _nextScene: null,
+    _stopped: false,
+    _sceneStarted: false,
+    _screenWidth: 480,
+    _screenHeight: 272,
+    _boxWidth: 480,
+    _boxHeight: 272
 }
-
-Scene._scene             = null;
-Scene._nextScene         = null;
-Scene._stopped           = false;
-Scene._sceneStarted      = false;
-Scene._screenWidth       = 480;
-Scene._screenHeight      = 272;
-Scene._boxWidth          = 480;
-Scene._boxHeight         = 272;
 
 Object.defineProperty(Scene, 'scene', {
     get: function() { return this._scene; }
@@ -55,15 +53,7 @@ Scene.initAudio = function() {
 };
 
 Scene.preferableRendererType = function() {
-    if (Utils.isOptionValid('canvas')) {
-        return 'canvas';
-    } else if (Utils.isOptionValid('webgl')) {
-        return 'webgl';
-    } else if (this.shouldUseCanvasRenderer()) {
-        return 'canvas';
-    } else {
-        return 'auto';
-    }
+    return 'auto';
 };
 
 Scene.shouldUseCanvasRenderer = function() {
@@ -100,7 +90,6 @@ Scene.initNwjs = function() {
 };
 
 Scene.setupErrorHandlers = function() {
-    window.addEventListener('error', this.onError.bind(this));
     document.addEventListener('keydown', this.onKeyDown.bind(this));
 };
 
@@ -111,24 +100,10 @@ Scene.requestUpdate = function() {
 };
 
 Scene.update = function() {
-    try {
-        this.tickStart();
-        this.updateInputData();
-        this.updateMain();
-        this.tickEnd();
-    } catch (e) {
-        this.catchException(e);
-    }
-};
-
-Scene.onError = function(e) {
-    console.error(e.message);
-    console.error(e.filename, e.lineno);
-    try {
-        this.stop();
-        Graphics.printError('Error', e.message);
-    } catch (e2) {
-    }
+    this.tickStart();
+    this.updateInputData();
+    this.updateMain();
+    this.tickEnd();
 };
 
 Scene.onKeyDown = function(event) {
