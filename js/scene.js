@@ -201,20 +201,13 @@ window.Scene = {
     }
 };
 
-Scene.Base = function() {
-    this.initialize.apply(this, arguments);
-};
+Scene.Base = Utils.deriveClass(Stage, function() {
+    Stage.call(this);
+    this._active = false;
+},
+{
 
-Scene.Base.prototype = Object.assign(Object.create(Stage.prototype), {
-    constructor: Scene.Base,
-
-    initialize() {
-        Stage.prototype.initialize.call(this);
-        this._active = false;
-    },
-
-    create() {
-    },
+    create: Utils.voidFunction,
 
     isActive() {
         return this._active;
@@ -236,8 +229,7 @@ Scene.Base.prototype = Object.assign(Object.create(Stage.prototype), {
         this._active = false;
     },
 
-    terminate() {
-    },
+    terminate: Utils.voidFunction,
 
     updateChildren() {
         this.children.forEach(function(child) {
@@ -248,14 +240,7 @@ Scene.Base.prototype = Object.assign(Object.create(Stage.prototype), {
     }
 });
 
-Scene.SongList = function() {
-    this.initialize.apply(this, arguments);
-};
-
-Scene.SongList.prototype = Object.assign(Object.create(Scene.Base.prototype), {
-    constructor: Scene.SongList,
-
-    INDEX_FILENAME: 'data/SONGLIST_INDEX',
+Scene.SongList = Utils.deriveClass(Scene.Base, null, {
 
     songdata(offset) {
         if (offset === undefined) { offset = 0; }
@@ -389,14 +374,13 @@ Scene.SongList.prototype = Object.assign(Object.create(Scene.Base.prototype), {
             Scene.goto(Scene.Play);
         }
     }
+},
+{
+    INDEX_FILENAME: 'data/SONGLIST_INDEX'
 });
 
-Scene.Play = function() {
-    this.initialize.apply(this, arguments);
-};
+Scene.Play = Utils.deriveClass(Scene.Base, null, {
 
-Scene.Play.prototype = Object.assign(Object.create(Scene.Base.prototype), {
-    constructor: Scene.Play,
     create() {
         this.addChild(new View.Play());
     },
@@ -507,16 +491,17 @@ Scene.Play.prototype = Object.assign(Object.create(Scene.Base.prototype), {
     },
 });
 
-Scene.Play.PendingNote = function(notes, note, frame) {
+Scene.Play.PendingNote = Utils.createClass(function(notes, note, frame) {
     this.notes = notes;
     this.note = note;
     this.frame = frame;
-};
-
-Scene.Play.PendingNote.prototype.update = function() {
-    --this.frame;
-    if (this.frame === 0) {
-        Taiko.hit(this.note);
-        this.notes.shift();
+},
+{
+    update() {
+        --this.frame;
+        if (this.frame === 0) {
+            Taiko.hit(this.note);
+            this.notes.shift();
+        }
     }
-};
+});

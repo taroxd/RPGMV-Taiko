@@ -77,7 +77,7 @@ View = {
     ROLL_BALLOON_INTERVAL: -5,
 };
 
-View.Animation = function(options) {
+View.Animation = Utils.deriveClass(Sprite, function(options) {
     Sprite.call(this);
     this._maxFrame = 1;
     this._frameDuration = this._duration = 1;
@@ -93,76 +93,74 @@ View.Animation = function(options) {
         if (options.frameY) { this.frameY = options.frameY; }
     }
     this.reset(false);
-};
+},
+{
+    get frameHeight() {
+        return this.bitmap.height;
+    },
 
-View.Animation.prototype = Object.create(Sprite.prototype);
-View.Animation.prototype.constructor = View.Animation;
+    update() {
+        Sprite.prototype.update.call(this);
+        if (!this.visible || !this.bitmap) {
+            return;
+        }
+        if (this._duration > 0) {
+            --this._duration;
+        } else {
+            this.setCurrentFrame();
+        }
+    },
 
-Object.defineProperty(View.Animation.prototype, 'frameHeight', {
-    get: function() { return this.bitmap.height; }
+    isLoop() {
+        return this._loop;
+    },
+
+    reset(toShow) {
+        if (toShow === undefined) { toShow = true; }
+        this._frameCount = 0;
+        this.setCurrentFrame();
+        this.visible = toShow;
+    },
+
+    setCurrentFrame() {
+        var w = this.bitmap.width / this._maxFrame;
+        this.setFrame(this._frameCount * w, this.frameY, w, this.frameHeight);
+        this._duration = this._frameDuration;
+        if (this._loop) {
+            if (this._frameCount === this._maxFrame - 1) {
+                this._frameCount = 0;
+            } else {
+                ++this._frameCount;
+            }
+        } else {
+            if (this._frameCount === this._maxFrame) {
+                this.visible = false;
+            } else {
+                ++this._frameCount;
+            }
+        }
+    }
 });
 
 
-View.Animation.prototype.update = function() {
-    Sprite.prototype.update.call(this);
-    if (!this.visible || !this.bitmap) {
-        return;
-    }
-    if (this._duration > 0) {
-        --this._duration;
-    } else {
-        this.setCurrentFrame();
-    }
-};
-
-View.Animation.prototype.isLoop = function() {
-    return this._loop;
-};
-
-View.Animation.prototype.reset = function(toShow) {
-    if (toShow === undefined) { toShow = true; }
-    this._frameCount = 0;
-    this.setCurrentFrame();
-    this.visible = toShow;
-};
-
-View.Animation.prototype.setCurrentFrame = function() {
-    var w = this.bitmap.width / this._maxFrame;
-    this.setFrame(this._frameCount * w, this.frameY, w, this.frameHeight);
-    this._duration = this._frameDuration;
-    if (this._loop) {
-        if (this._frameCount === this._maxFrame - 1) {
-            this._frameCount = 0;
-        } else {
-            ++this._frameCount;
-        }
-    } else {
-        if (this._frameCount === this._maxFrame) {
-            this.visible = false;
-        } else {
-            ++this._frameCount;
-        }
-    }
-};
-
-View.Digit = function(bitmap) {
+View.Digit = Utils.deriveClass(Sprite, function(bitmap) {
     Sprite.call(this, bitmap);
     this.clear();
-};
+},
+{
+    clear() {
+        this.visible = false;
+    },
 
-View.Digit.prototype = Object.create(Sprite.prototype);
-View.Digit.prototype.constructor = View.Digit;
+    show(num) {
+        var w = this.bitmap.width / 10;
+        this.setFrame(num * w, 0, w, this.bitmap.height);
+        this.visible = true;
+    }
+});
 
-View.Digit.prototype.clear = function() {
-    this.visible = false;
-};
-View.Digit.prototype.show = function(num) {
-    var w = this.bitmap.width / 10;
-    this.setFrame(num * w, 0, w, this.bitmap.height);
-    this.visible = true;
-}
 
-View.Number = function(options) {
+View.Number = Utils.deriveClass(Sprite, function(options) {
     Sprite.call(this);
     this.interval = 0;
     if (options) {
@@ -172,116 +170,113 @@ View.Number = function(options) {
         if (options.alignment) { this.alignment = options.alignment; }
         if (options.bitmap) { this._digitBitmap = ImageManager.toBitmap(options.bitmap); }
     }
-};
+},
+{
+    clear() {
+        this._numNow = null;
+        this.children.splice(0);
+    },
 
-View.Number.prototype = Object.create(Sprite.prototype);
-View.Number.prototype.constructor = View.Number;
+    show(num) {
+        if (num === this._numNow) { return; }
+        this._numNow = num;
+        this.clear();
+        var digitWidth = this._digitBitmap.width / 10 + this.interval;
+        num = num.toString();
+        var len = num.length;
+        var totalWidth = digitWidth * len - this.interval;
+        for (var i = 0; i < len; ++i) {
+            var ch = num[i];
+            var digit = new View.Digit(this._digitBitmap);
+            digit.x = digitWidth * i;
+            digit.z = this.z;
+            switch(this.alignment) {
+                case 'center':
+                    digit.x -= totalWidth / 2;
+                    break;
+                case 'right':
+                    digit.x -= totalWidth;
+                    break;
+            }
+            digit.show(parseInt(ch));
+            this.addChild(digit);
+        };
 
-View.Number.prototype.clear = function() {
-    this._numNow = null;
-    this.children.splice(0);
-};
+        this.onChange();
+    },
 
-View.Number.prototype.show = function(num) {
-    if (num === this._numNow) { return; }
-    this._numNow = num;
-    this.clear();
-    var digitWidth = this._digitBitmap.width / 10 + this.interval;
-    num = num.toString();
-    var len = num.length;
-    var totalWidth = digitWidth * len - this.interval;
-    for (var i = 0; i < len; ++i) {
-        var ch = num[i];
-        var digit = new View.Digit(this._digitBitmap);
-        digit.x = digitWidth * i;
-        digit.z = this.z;
-        switch(this.alignment) {
-            case 'center':
-                digit.x -= totalWidth / 2;
-                break;
-            case 'right':
-                digit.x -= totalWidth;
-                break;
-        }
-        digit.show(parseInt(ch));
-        this.addChild(digit);
-    };
+    onChange: Utils.voidFunction
+});
 
-    this.onChange();
-};
 
-View.Number.prototype.onChange = function() {};
-
-View.SongList = function() {
+View.SongList = Utils.deriveClass(Sprite, function() {
     Sprite.call(this, ImageManager.skin('songselectbg'));
     this._songlist = new View.SongList.Songs();
     this.addChild(this._songlist);
-};
-View.SongList.prototype = Object.create(Sprite.prototype);
-View.SongList.prototype.constructor = View.SongList;
+});
 
-View.SongList.Songs = function() {
+
+View.SongList.Songs = Utils.deriveClass(Sprite, function() {
     Sprite.call(this, new Bitmap(Graphics.width, Graphics.height));
     this.bitmap.fontSize = 14;
-};
+},
+{
+    update() {
+        if (this._songdata !== Scene.scene.songdata()) { this.refresh(); }
+    },
 
-View.SongList.Songs.prototype = Object.create(Sprite.prototype);
-View.SongList.Songs.prototype.constructor = View.SongList.Songs;
+    refresh() {
+        this._songdata = Scene.scene.songdata();
+        this.bitmap.clear();
 
-View.SongList.Songs.LINE_HEIGHT = 30;
-View.SongList.Songs.SCORE_HEIGHT = 15;
+        var i;
+        for (var i = -3; i <= -1; ++i) {
+            this.drawSimpleInfo(Scene.scene.songdata(i),
+                60, 105 + i * View.SongList.Songs.LINE_HEIGHT);
+        };
 
-View.SongList.Songs.prototype.update = function() {
-    if (this._songdata !== Scene.scene.songdata()) { this.refresh(); }
-};
+        this.drawSimpleInfo(this._songdata, 120, 110);
+        this.drawPlaydata(Taiko.Playdata.load(this._songdata.name));
 
-View.SongList.Songs.prototype.refresh = function() {
-    this._songdata = Scene.scene.songdata();
-    this.bitmap.clear();
+        for (var i = 1; i <= 3; ++i) {
+            this.drawSimpleInfo(Scene.scene.songdata(i),
+                60, 125 + i * View.SongList.Songs.LINE_HEIGHT);
+        }
+    },
 
-    var i;
-    for (i = -3; i <= -1; ++i) {
-        this.drawSimpleInfo(Scene.scene.songdata(i),
-            60, 105 + i * View.SongList.Songs.LINE_HEIGHT);
-    };
+    drawSimpleInfo(songdata, x, y, width, height) {
+        if (!width) { width = 340; }
+        if (!height) { height = View.SongList.Songs.LINE_HEIGHT; }
+        this.bitmap.drawText(songdata.title, x, y, width, height);
+        this.bitmap.drawText("★" + songdata.level, x, y, width, height, "right");
+    },
 
-    this.drawSimpleInfo(this._songdata, 120, 110);
-    this.drawPlaydata(Taiko.Playdata.load(this._songdata.name));
+    drawPlaydata(playdata) {
+        var crownType;
+        if (playdata.isEmpty()) {
+            crownType = 0;
+        } else if (playdata.miss === 0) {
+            crownType = 3;
+        } else if (playdata.normalClear) {
+            crownType = 2;
+        } else {
+            crownType = 1;
+        }
 
-    for (i = 1; i <= 3; ++i) {
-        this.drawSimpleInfo(Scene.scene.songdata(i),
-            60, 125 + i * View.SongList.Songs.LINE_HEIGHT);
+        var src = ImageManager.skin('clearmark');
+        src.addLoadListener(function() {
+            this.bitmap.blt(src, 28 * crownType, 0, 28, 28, 65, 115);
+            this.bitmap.drawText(playdata.score,
+                0, Graphics.height - 14, Graphics.width, 14, 'right');
+        }.bind(this));
     }
-};
+}, {
+    LINE_HEIGHT: 30,
+    SCORE_HEIGHT: 15
+});
 
-View.SongList.Songs.prototype.drawSimpleInfo = function(songdata, x, y, width, height) {
-    if (!width) { width = 340; }
-    if (!height) { height = View.SongList.Songs.LINE_HEIGHT; }
-    this.bitmap.drawText(songdata.title, x, y, width, height);
-    this.bitmap.drawText("★" + songdata.level, x, y, width, height, "right");
-};
 
-View.SongList.Songs.prototype.drawPlaydata = function(playdata) {
-    var crownType;
-    if (playdata.isEmpty()) {
-        crownType = 0;
-    } else if (playdata.miss === 0) {
-        crownType = 3;
-    } else if (playdata.normalClear) {
-        crownType = 2;
-    } else {
-        crownType = 1;
-    }
-
-    var src = ImageManager.skin('clearmark');
-    src.addLoadListener(function() {
-        this.bitmap.blt(src, 28 * crownType, 0, 28, 28, 65, 115);
-        this.bitmap.drawText(playdata.score,
-            0, Graphics.height - 14, Graphics.width, 14, 'right');
-    }.bind(this));
-};
-
-View.Play = function() {
+View.Play = Utils.deriveClass(Sprite, function() {
     Sprite.call(this);
 
     var sfieldbg = new Sprite(ImageManager.skin('sfieldbg'));
@@ -309,75 +304,71 @@ View.Play = function() {
     this.addChild(new View.Play.Combo());
     this.addChild(new View.Play.Gauge());
     this.addChild(new View.Play.NoteFly());
-};
-View.Play.prototype = Object.create(Sprite.prototype);
-View.Play.prototype.constructor = View.Play;
+},
+{
+    update() {
+        Sprite.prototype.update.call(this);
+    }
+});
 
-View.Play.prototype.update = function() {
-    Sprite.prototype.update.call(this);
-};
-
-View.Play.Fumen = function() {
+View.Play.Fumen = Utils.deriveClass(Sprite, function() {
     Sprite.call(this);
     this._notes = Taiko.fumen.notesForDisplay;
     this.x = View.FUMEN_X + View.NOTE_X;
     this.y = View.FUMEN_Y;
-};
-View.Play.Fumen.prototype = Object.create(Sprite.prototype);
-View.Play.Fumen.prototype.constructor = View.Play.Fumen;
+},
+{
+    update() {
+        this.pushNotes();
+        while (this.removeInvalid()) {}
+        Sprite.prototype.update.call(this);
+    },
 
-View.Play.Fumen.prototype.update = function() {
-    this.pushNotes();
-    while (this.removeInvalid()) {}
-    Sprite.prototype.update.call(this);
-};
-
-View.Play.Fumen.prototype.removeInvalid = function() {
-    var view = this.children[0];
-    if (!view || view.visible) {
-        return false;
-    }
-    return this.removeChildAt(0);
-};
-
-View.Play.Fumen.prototype.pushNotes = function() {
-    var note;
-    while (true) {
-        note = this._notes[0];
-        if (!note || note.appearTime > Taiko.playTime) {
-            break;
+    removeInvalid() {
+        var view = this.children[0];
+        if (!view || view.visible) {
+            return false;
         }
-        var view = new View.Play.Fumen.Note(note);
-        this.addChild(view);
-        this._notes.shift();
-    }
-    this.children.sort(function(a, b) {
-        return a.z - b.z;
-    });
-};
+        return this.removeChildAt(0);
+    },
 
-View.Play.Fumen.Note = function(note) {
+    pushNotes() {
+        var note;
+        while (true) {
+            note = this._notes[0];
+            if (!note || note.appearTime > Taiko.playTime) {
+                break;
+            }
+            var view = new View.Play.Fumen.Note(note);
+            this.addChild(view);
+            this._notes.shift();
+        }
+        this.children.sort(function(a, b) {
+            return a.z - b.z;
+        });
+    }
+});
+
+View.Play.Fumen.Note = Utils.deriveClass(Sprite, function(note) {
     this._note = note;
     Sprite.call(this, ImageManager.note(note));
     this.anchor.x = note.anchorX;
-};
-View.Play.Fumen.Note.prototype = Object.create(Sprite.prototype);
-View.Play.Fumen.Note.prototype.constructor = View.Play.Fumen.Note;
+},
+{
+    isValid() {
+        return this._note.isValid() && this.x + this.width > 0;
+    },
 
-View.Play.Fumen.Note.prototype.isValid = function() {
-    return this._note.isValid() && this.x + this.width > 0;
-};
-
-View.Play.Fumen.Note.prototype.update = function() {
-    this.visible = this.isValid();
-    if (this.visible) {
-        this.x = this._note.x;
-        this.z = this._note.z;
+    update() {
+        this.visible = this.isValid();
+        if (this.visible) {
+            this.x = this._note.x;
+            this.z = this._note.z;
+        }
     }
-};
+});
 
-
-View.Play.Score = function() {
+View.Play.Score = Utils.deriveClass(Sprite, function() {
     Sprite.call(this);
     this._scoreView = new View.Number(
         {x: View.SCORE_X, y: View.SCORE_Y, alignment: 'right', bitmap: 'font_m'});
@@ -388,96 +379,90 @@ View.Play.Score = function() {
 
     this._score = 0;
     this.clearTime = 0;
-};
-
-View.Play.Score.prototype = Object.create(Sprite.prototype);
-View.Play.Score.prototype.constructor = View.Play.Score;
-
-View.Play.Score.prototype.update = function() {
-    --this.clearTime;
-    if (this._score !== Taiko.score) {
-        var scoreLast = this._score;
-        this._score = Taiko.score;
-        this._scoreView.show(this._score);
-        this._scoreDiffView.show(this._score - scoreLast);
-        this._clearTime = 40;
-    } else if (this._clearTime < 0) {
-        this._scoreDiffView.clear();
+},
+{
+    update() {
+        --this.clearTime;
+        if (this._score !== Taiko.score) {
+            var scoreLast = this._score;
+            this._score = Taiko.score;
+            this._scoreView.show(this._score);
+            this._scoreDiffView.show(this._score - scoreLast);
+            this._clearTime = 40;
+        } else if (this._clearTime < 0) {
+            this._scoreDiffView.clear();
+        }
+        Sprite.prototype.update.call(this);
     }
-    Sprite.prototype.update.call(this);
-};
+});
 
-View.Play.Score.Diff = function(options) {
+View.Play.Score.Diff = Utils.deriveClass(View.Number, function(options) {
     View.Number.call(this, options);
     this._changeEffect = 0;
-};
+},
+{
+    update() {
+        View.Number.prototype.update.call(this);
+        if (this._changeEffect) {
+            this.children.forEach(function(digit) { digit.x += 2; });
+            --this._changeEffect;
+        }
+    },
 
-View.Play.Score.Diff.prototype = Object.create(View.Number.prototype);
-View.Play.Score.Diff.prototype.constructor = View.Play.Score.Diff;
-
-View.Play.Score.Diff.prototype.update = function() {
-    View.Number.prototype.update.call(this);
-    if (this._changeEffect) {
-        this.children.forEach(function(digit) { digit.x += 2; });
-        --this._changeEffect;
+    onChange() {
+        this._changeEffect = 5;
+        this.children.forEach(function(digit) { digit.x -= 10; });
     }
-};
+});
 
-View.Play.Score.Diff.prototype.onChange = function() {
-    this._changeEffect = 5;
-    this.children.forEach(function(digit) { digit.x -= 10; });
-};
-
-View.Play.Judgement = function() {
+View.Play.Judgement = Utils.deriveClass(View.Animation, function() {
     View.Animation.call(this,
         {x: View.JUDGEMENT_X, y: View.JUDGEMENT_Y, duration: 30, bitmap: 'judgement'});
     Taiko.addHitListener(View.Play.Judgement.prototype.resetAndShow.bind(this));
-};
+},
+{
+    get frameHeight() {
+        return this.bitmap.height / 3;
+    },
 
-View.Play.Judgement.prototype = Object.create(View.Animation.prototype);
-View.Play.Judgement.prototype.constructor = View.Play.Judgement;
+    update() {
+        View.Animation.prototype.update.call(this);
+        if (!this.visible) {
+            return;
+        }
+        if (this._changeEffect > 0) {
+            this.y -= 2;
+            this._changeEffect -= 2;
+        }
+    },
 
-Object.defineProperty(View.Play.Judgement.prototype, 'frameHeight', {
-    get: function() { return this.bitmap.height / 3; }
+    resetAndShow(note) {
+        if (!note.isNormal()) {
+            return;
+        }
+        var type;
+        switch(note.performance) {
+            case Taiko.Judgement.MISS:
+                type = 2;
+                break;
+            case Taiko.Judgement.GREAT:
+                type = 1;
+                break;
+            default:
+                type = 0;
+                break;
+        }
+        this.frameY = this.bitmap.height * type / 3;
+
+        this.y = View.JUDGEMENT_Y + 8;
+        this._changeEffect = 8;
+
+        this.reset(true);
+    }
 });
 
-View.Play.Judgement.prototype.update = function() {
-    View.Animation.prototype.update.call(this);
-    if (!this.visible) {
-        return;
-    }
-    if (this._changeEffect > 0) {
-        this.y -= 2;
-        this._changeEffect -= 2;
-    }
-};
 
-View.Play.Judgement.prototype.resetAndShow = function(note) {
-    if (!note.isNormal()) {
-        return;
-    }
-    var type;
-    switch(note.performance) {
-        case Taiko.Judgement.MISS:
-            type = 2;
-            break;
-        case Taiko.Judgement.GREAT:
-            type = 1;
-            break;
-        default:
-            type = 0;
-            break;
-    }
-    this.frameY = this.bitmap.height * type / 3;
-
-    this.y = View.JUDGEMENT_Y + 8;
-    this._changeEffect = 8;
-
-    this.reset(true);
-};
-
-
-View.Play.Combo = function() {
+View.Play.Combo = Utils.deriveClass(Sprite, function() {
     Sprite.call(this);
 
     this._comboNumber = 0;
@@ -503,38 +488,36 @@ View.Play.Combo = function() {
     this.addChild(this._combo2);
 
     this.visible = false;
-};
-
-View.Play.Combo.prototype = Object.create(Sprite.prototype);
-View.Play.Combo.prototype.constructor = View.Play.Score.Diff;
-
-View.Play.Combo.prototype.update = function() {
-    if (this._flower.visible) {
-        this._flower.update();
-    }
-};
-
-View.Play.Combo.prototype.updateCombo = function() {
-    var combo = Taiko.combo;
-    if (combo < 10) {
-        this.visible = false;
-    } else {
-        this.visible = true;
-        if (combo % 50 == 0) {
-            this._flower.reset();
+},
+{
+    update() {
+        if (this._flower.visible) {
+            this._flower.update();
         }
-        if (combo < 50) {
-            this._combo1.show(combo);
-            this._combo2.clear();
+    },
+
+    updateCombo() {
+        var combo = Taiko.combo;
+        if (combo < 10) {
+            this.visible = false;
         } else {
-            this._combo1.clear();
-            this._combo2.show(combo);
+            this.visible = true;
+            if (combo % 50 == 0) {
+                this._flower.reset();
+            }
+            if (combo < 50) {
+                this._combo1.show(combo);
+                this._combo2.clear();
+            } else {
+                this._combo1.clear();
+                this._combo2.show(combo);
+            }
         }
     }
-};
+});
 
 
-View.Play.MTaiko = function() {
+View.Play.MTaiko = Utils.createClass(Sprite, function() {
     Sprite.call(this);
 
     var redBitmap = ImageManager.skin('mtaikoflash_red');
@@ -564,26 +547,24 @@ View.Play.MTaiko = function() {
         this.addChild(this._lo);
         this.addChild(this._ro);
     }.bind(this));
-};
+},
+{
+    update() {
+        if (Input.isTriggered('outerL')) { this._lo.reset(); }
+        if (Input.isTriggered('outerR')) { this._ro.reset(); }
+        if (Input.isTriggered('innerL')) { this._li.reset(); }
+        if (Input.isTriggered('innerR')) { this._ri.reset(); }
+        Sprite.prototype.update.call(this);
+    },
 
-View.Play.MTaiko.prototype = Object.create(Sprite.prototype);
-View.Play.MTaiko.prototype.constructor = View.Play.MTaiko;
+    getBitmap(src, type) {
+        var ret = new Bitmap(src.width / 2, src.height);
+        ret.blt(src, src.width * type / 2, 0, ret.width, ret.height, 0, 0);
+        return ret;
+    },
+});
 
-View.Play.MTaiko.prototype.update = function() {
-    if (Input.isTriggered('outerL')) { this._lo.reset(); }
-    if (Input.isTriggered('outerR')) { this._ro.reset(); }
-    if (Input.isTriggered('innerL')) { this._li.reset(); }
-    if (Input.isTriggered('innerR')) { this._ri.reset(); }
-    Sprite.prototype.update.call(this);
-};
-
-View.Play.MTaiko.prototype.getBitmap = function(src, type) {
-    var ret = new Bitmap(src.width / 2, src.height);
-    ret.blt(src, src.width * type / 2, 0, ret.width, ret.height, 0, 0);
-    return ret;
-};
-
-View.Play.SfieldFlash = function() {
+View.Play.SfieldFlash = Utils.deriveClass(Sprite, function() {
     Sprite.call(this);
     this._sfr = new View.Animation({
         x: View.MTAIKO_SFX, y: View.MTAIKO_SFY,
@@ -600,29 +581,27 @@ View.Play.SfieldFlash = function() {
     this.addChild(this._sfr);
     this.addChild(this._sfb);
     this.addChild(this._sfg);
-};
-
-View.Play.SfieldFlash.prototype = Object.create(Sprite.prototype);
-View.Play.SfieldFlash.prototype.constructor = View.Play.SfieldFlash;
-
-View.Play.SfieldFlash.prototype.update = function() {
-    if (Taiko.isGogotime()) {
-        this._sfg.reset();
-    } else {
-        this._sfg.visible = false;
-        if (Input.isOuterTriggered()) {
-            this._sfr.visible = false;
-            this._sfb.reset();
+},
+{
+    update() {
+        if (Taiko.isGogotime()) {
+            this._sfg.reset();
+        } else {
+            this._sfg.visible = false;
+            if (Input.isOuterTriggered()) {
+                this._sfr.visible = false;
+                this._sfb.reset();
+            }
+            if (Input.isInnerTriggered()) {
+                this._sfr.reset();
+                this._sfb.visible = false;
+            }
         }
-        if (Input.isInnerTriggered()) {
-            this._sfr.reset();
-            this._sfb.visible = false;
-        }
+        Sprite.prototype.update.call(this);
     }
-    Sprite.prototype.update.call(this);
-};
+});
 
-View.Play.Gauge = function() {
+View.Play.Gauge = Utils.deriveClass(Sprite, function() {
     Sprite.call(this);
 
     var bitmap = ImageManager.skin('normagauge');
@@ -647,59 +626,67 @@ View.Play.Gauge = function() {
     this.addChild(this._soul);
 
     this.refresh();
-};
+},
+{
+    update: Utils.voidFunction,
+    refresh() {
+        var fillW;
+        var rate = Taiko.gauge.rate;
+        var nRate = Taiko.Gauge.NORMAL_RATE;
 
-View.Play.Gauge.prototype = Object.create(Sprite.prototype);
-View.Play.Gauge.prototype.constructor = View.Play.Gauge;
+        if (rate < nRate) {
+            fillW = View.Play.Gauge.NORMAL_X * rate / nRate;
+        } else {
+            fillW = View.Play.Gauge.WIDTH -
+                (1 - rate) *
+                (View.Play.Gauge.WIDTH - View.Play.Gauge.NORMAL_X) /
+                (1 - nRate);
+        }
 
-View.Play.Gauge.WIDTH = 300;
-View.Play.Gauge.HEIGHT = 22;
-View.Play.Gauge.NORMAL_X = 233;
+        var y, src;
 
-View.Play.Gauge.prototype.update = function() {};
+        if (Taiko.gauge.isMax()) {
+            y = View.Play.Gauge.HEIGHT * 3;
+            src = 'soul-2';
+        } else {
+            y = View.Play.Gauge.HEIGHT;
+            src = 'soul-1';
+        }
 
-View.Play.Gauge.prototype.refresh = function() {
-    var fillW;
-    var rate = Taiko.gauge.rate;
-    var nRate = Taiko.Gauge.NORMAL_RATE;
-
-    if (rate < nRate) {
-        fillW = View.Play.Gauge.NORMAL_X * rate / nRate;
-    } else {
-        fillW = View.Play.Gauge.WIDTH -
-            (1 - rate) *
-            (View.Play.Gauge.WIDTH - View.Play.Gauge.NORMAL_X) /
-            (1 - nRate);
+        this._full.setFrame(0, y, fillW, View.Play.Gauge.HEIGHT);
+        this._soul.bitmap = ImageManager.skin(src);
     }
-
-    var y, src;
-
-    if (Taiko.gauge.isMax()) {
-        y = View.Play.Gauge.HEIGHT * 3;
-        src = 'soul-2';
-    } else {
-        y = View.Play.Gauge.HEIGHT;
-        src = 'soul-1';
-    }
-
-    this._full.setFrame(0, y, fillW, View.Play.Gauge.HEIGHT);
-    this._soul.bitmap = ImageManager.skin(src);
-};
+},
+{
+    WIDTH: 300,
+    HEIGHT: 22,
+    NORMAL_X: 233
+});
 
 
-View.Play.NoteFly = function() {
+View.Play.NoteFly = Utils.deriveClass(Sprite, function() {
     Sprite.call(this);
     Taiko.addHitListener(function(note) {
         if (note.performance !== Taiko.Judgement.MISS && !note.isBalloon()) {
             this.addChild(new View.Play.NoteFly.Note(note));
         };
     }.bind(this));
-};
+},
+{
+    update() {
+        while (this.removeInvalid()) {}
+        Sprite.prototype.update.call(this);
+    },
 
-View.Play.NoteFly.prototype = Object.create(Sprite.prototype);
-View.Play.NoteFly.prototype.constructor = View.Play.NoteFly;
-
-void function() {
+    removeInvalid() {
+        var view = this.children[0];
+        if (!view || view.visible) {
+            return false;
+        }
+        return this.removeChildAt(0);
+    }
+},
+function() {
 
     function weightedAverage(x, y, wx, wy) {
         return (x * wx + y * wy) / (wx + wy)
@@ -715,57 +702,44 @@ void function() {
     var a = View.NOTE_FLY_ACC_Y;
 
     var xTable = [];
-    View.Play.NoteFly.getX = function(t) {
-        if (xTable[t] === undefined) {
-            xTable[t] = weightedAverage(x0, x1, d - t, t);
-        }
-        return xTable[t];
-    };
-
     var yTable = [];
-    View.Play.NoteFly.getY = function(t) {
-        if (yTable[t] === undefined) {
-            yTable[t] = weightedAverage(y0, y1, d - t, t) - t * (d - t) * a;
-        }
-        return yTable[t];
-    };
-}();
 
-View.Play.NoteFly.prototype.update = function() {
-    while (this.removeInvalid()) {}
-    Sprite.prototype.update.call(this);
-};
-
-View.Play.NoteFly.prototype.removeInvalid = function() {
-    var view = this.children[0];
-    if (!view || view.visible) {
-        return false;
+    return {
+        getX(t) {
+            if (xTable[t] === undefined) {
+                xTable[t] = weightedAverage(x0, x1, d - t, t);
+            }
+            return xTable[t];
+        },
+        getY(t) {
+            if (yTable[t] === undefined) {
+                yTable[t] = weightedAverage(y0, y1, d - t, t) - t * (d - t) * a;
+            }
+            return yTable[t];
+        },
     }
-    return this.removeChildAt(0);
-};
+}());
 
-View.Play.NoteFly.Note = function(note) {
+
+View.Play.NoteFly.Note = Utils.deriveClass(Sprite, function(note) {
     Sprite.call(this, ImageManager.noteHead(note.type));
     this.anchor.x = this.anchor.y = 0.5;
     this._t = 0;
     this.update();
-};
-
-View.Play.NoteFly.Note.prototype = Object.create(Sprite.prototype);
-View.Play.NoteFly.Note.prototype.constructor = View.Play.NoteFly.Note;
-
-View.Play.NoteFly.Note.prototype.update = function() {
-    if (this._t < View.NOTE_FLY_DURATION) {
-        this.x = View.Play.NoteFly.getX(this._t);
-        this.y = View.Play.NoteFly.getY(this._t);
-        ++this._t;
-    } else {
-        this.visible = false;
+},
+{
+    update() {
+        if (this._t < View.NOTE_FLY_DURATION) {
+            this.x = View.Play.NoteFly.getX(this._t);
+            this.y = View.Play.NoteFly.getY(this._t);
+            ++this._t;
+        } else {
+            this.visible = false;
+        }
     }
-};
+});
 
-
-View.Play.Gogosplash = function() {
+View.Play.Gogosplash = Utils.deriveClass(Sprite, function() {
     Sprite.call(this);
 
     var fire = new View.Animation({
@@ -796,68 +770,63 @@ View.Play.Gogosplash = function() {
     }.bind(this));
 
     this.visible = false;
-};
-
-View.Play.Gogosplash.prototype = Object.create(Sprite.prototype);
-View.Play.Gogosplash.prototype.constructor = View.Play.Gogosplash;
-
-View.Play.Gogosplash.prototype.update = function() {
-    var isGogotime = Taiko.isGogotime();
-    if (this._gogotime && !isGogotime) {
-        this.visible = false;
-        this._gogotime = false;
-    } else if (!this._gogotime && isGogotime) {
-        this.visible = true;
-        this._gogotime = true;
-        this.children.slice(1).forEach(function(splash) {
-            splash.reset();
-        });
-    }
-
-    if (this.visible) {
-        Sprite.prototype.update.call(this);
-    }
-};
-
-View.Play.Explosion = function() {
-    View.Animation.apply(this, arguments);
-};
-
-View.Play.Explosion.prototype = Object.create(View.Animation.prototype);
-View.Play.Explosion.prototype.constructor = View.Play.Explosion;
-
-View.Play.Explosion.create = function() {
-    var upper = new View.Play.Explosion({
-        x: View.EXPLOSION_UPPER_X, y: View.EXPLOSION_UPPER_Y,
-        frame: View.EXPLOSION_UPPER_FRAME, duration: 1,
-        bitmap: 'explosion_upper'
-    });
-
-    var lower = new View.Play.Explosion({
-        x: View.EXPLOSION_LOWER_X, y: View.EXPLOSION_LOWER_Y,
-        frame: View.EXPLOSION_LOWER_FRAME, duration: 1,
-        bitmap: 'explosion_lower'
-    });
-
-    Taiko.addHitListener(function(note) {
-        if (note.performance === Taiko.Judgement.MISS || !note.isNormal()) {
-            return;
+},
+{
+    update() {
+        var isGogotime = Taiko.isGogotime();
+        if (this._gogotime && !isGogotime) {
+            this.visible = false;
+            this._gogotime = false;
+        } else if (!this._gogotime && isGogotime) {
+            this.visible = true;
+            this._gogotime = true;
+            this.children.slice(1).forEach(function(splash) {
+                splash.reset();
+            });
         }
-        type = note.performance === Taiko.Judgement.PERFECT ? 0 : 1;
-        type += note.isDoubleScore() ? 2 : 0;
-        upper.resetAndShow(type);
-        lower.resetAndShow(type);
-    });
 
-    return {lower: lower, upper: upper};
-}
-
-Object.defineProperty(View.Play.Explosion.prototype, 'frameHeight', {
-    get: function() { return this.bitmap.height / 4; }
+        if (this.visible) {
+            Sprite.prototype.update.call(this);
+        }
+    }
 });
 
-View.Play.Explosion.prototype.resetAndShow = function(type) {
-    this._duration = 0;
-    this.frameY = this.bitmap.height * type / 4;
-    this.reset();
-};
+
+View.Play.Explosion = Utils.deriveClass(View.Animation, null,
+{
+    get frameHeight() {
+        return this.bitmap.height / 4;
+    },
+    resetAndShow(type) {
+        this._duration = 0;
+        this.frameY = this.bitmap.height * type / 4;
+        this.reset();
+    }
+},
+{
+    create() {
+        var upper = new View.Play.Explosion({
+            x: View.EXPLOSION_UPPER_X, y: View.EXPLOSION_UPPER_Y,
+            frame: View.EXPLOSION_UPPER_FRAME, duration: 1,
+            bitmap: 'explosion_upper'
+        });
+
+        var lower = new View.Play.Explosion({
+            x: View.EXPLOSION_LOWER_X, y: View.EXPLOSION_LOWER_Y,
+            frame: View.EXPLOSION_LOWER_FRAME, duration: 1,
+            bitmap: 'explosion_lower'
+        });
+
+        Taiko.addHitListener(function(note) {
+            if (note.performance === Taiko.Judgement.MISS || !note.isNormal()) {
+                return;
+            }
+            type = note.performance === Taiko.Judgement.PERFECT ? 0 : 1;
+            type += note.isDoubleScore() ? 2 : 0;
+            upper.resetAndShow(type);
+            lower.resetAndShow(type);
+        });
+
+        return {lower: lower, upper: upper};
+    },
+});

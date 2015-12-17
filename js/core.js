@@ -1,40 +1,42 @@
 
-if (!Object.assign) {
-  Object.defineProperty(Object, 'assign', {
-    enumerable: false,
-    configurable: true,
-    writable: true,
-    value: function(target) {
-      'use strict';
-      if (target === undefined || target === null) {
-        throw new TypeError('Cannot convert first argument to object');
-      }
-
-      var to = Object(target);
-      for (var i = 1; i < arguments.length; i++) {
-        var nextSource = arguments[i];
-        if (nextSource === undefined || nextSource === null) {
-          continue;
-        }
-        nextSource = Object(nextSource);
-
-        var keysArray = Object.keys(nextSource);
-        for (var nextIndex = 0, len = keysArray.length; nextIndex < len; nextIndex++) {
-          var nextKey = keysArray[nextIndex];
-          var desc = Object.getOwnPropertyDescriptor(nextSource, nextKey);
-          if (desc !== undefined && desc.enumerable) {
-            to[nextKey] = nextSource[nextKey];
-          }
-        }
-      }
-      return to;
-    }
-  });
-}
-
 window.Utils = {
     RPGMAKER_NAME: 'MV'
 };
+
+void function() {
+    function assign(target, source) {
+        for (var key in source) {
+            var desc = Object.getOwnPropertyDescriptor(source, key);
+            Object.defineProperty(target, key, desc);
+        }
+    }
+
+    Utils.createClass = function(constructor, methodObj, staticObj) {
+        if (methodObj) {
+            assign(constructor.prototype, methodObj);
+        }
+        if (staticObj) {
+            assign(constructor, staticObj);
+        }
+        return constructor;
+    };
+
+    Utils.deriveClass = function(superClass, constructor, methodObj, staticObj) {
+        if (!constructor) {
+            constructor = function() {
+                superClass.apply(this, arguments);
+            };
+        }
+        constructor.prototype = Object.create(superClass.prototype);
+        Utils.createClass(constructor, methodObj, staticObj);
+        constructor.prototype.constructor = constructor;
+        return constructor;
+    };
+}();
+
+Utils.voidFunction = function() {};
+Utils.returnTrue = function() { return true; };
+Utils.returnFalse = function() { return false; };
 
 Utils.isOptionValid = function(name) {
     return location.search.slice(1).split('&').indexOf(name) >= 0;

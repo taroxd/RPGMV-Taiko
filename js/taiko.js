@@ -170,6 +170,10 @@ window.Taiko = {
 
     msec() {
         return Date.now();
+    },
+
+    Note(type, time, speed) {
+        return new Taiko.Note.TYPES[type](type, time, speed);
     }
 };
 
@@ -180,21 +184,22 @@ Taiko.Version.toString = function() {
 };
 Taiko.VERSION = (Taiko.Version.MAJOR << 20) + (Taiko.Version.MINOR << 10) + Taiko.Version.PATCH;
 
-Taiko.SE = function(url) {
+Taiko.SE = Utils.createClass(function(url) {
     this.buffer = new WebAudio(url);
-};
-
-Taiko.SE.initialize = function() {
-    Taiko.SE.DONG = new Taiko.SE('audio/dong.wav');
-    Taiko.SE.KA = new Taiko.SE('audio/ka.wav');
-    Taiko.SE.BALLOON = new Taiko.SE('audio/balloon.wav');
-};
-
-Taiko.SE.prototype.play = function() {
-    this.buffer.volume = Taiko.sevol;
-    this.buffer.play();
-};
-
+},
+{
+    play() {
+        this.buffer.volume = Taiko.sevol;
+        this.buffer.play();
+    }
+},
+{
+    initialize() {
+        Taiko.SE.DONG = new Taiko.SE('audio/dong.wav');
+        Taiko.SE.KA = new Taiko.SE('audio/ka.wav');
+        Taiko.SE.BALLOON = new Taiko.SE('audio/balloon.wav');
+    }
+});
 
 Taiko.Song = {
     play(wave, volume, loop, offset) {
@@ -218,7 +223,7 @@ Taiko.Song = {
 };
 
 
-Taiko.Playdata = function() {
+Taiko.Playdata = Utils.createClass(function() {
     this.score = 0;
     this.maxCombo = 0;
     this[Taiko.Judgement.PERFECT] = 0;
@@ -226,27 +231,8 @@ Taiko.Playdata = function() {
     this[Taiko.Judgement.MISS] = 0;
     this.normalClear = false;
     this.version = Taiko.VERSION;
-};
-
-Taiko.Playdata.makeFilename = function(name) {
-    return name + '.json';
-};
-
-Taiko.Playdata.load = function(name) {
-    var filename = Taiko.Playdata.makeFilename(name);
-    var data = Storage.load(filename);
-    var ret = new Taiko.Playdata();
-    if (data) {
-        data = JSON.parse(data)
-        for (key in data) {
-             ret[key] = data[key];
-        }
-    }
-    return ret;
-};
-
-
-Object.assign(Taiko.Playdata.prototype, {
+},
+{
     isEmpty() {
         return this.score === 0;
     },
@@ -265,144 +251,98 @@ Object.assign(Taiko.Playdata.prototype, {
         newData.normalClear = Taiko.gauge.isNormal() || oldData.normalClear;
         Storage.save(Taiko.Playdata.makeFilename(name), JSON.stringify(newData));
     }
-});
-
-
-Taiko.Songdata = function(name) {
-    this._name = name;
-    this.initData();
-};
-
-Object.assign(Taiko.Songdata, {
-    HEADER_RE: /#?(\w+) *:?(.*)/m,
-    DIRECTIVE_RE: /^# *(\w+) *:?(.*)/m,
-    COMMENT_RE: /\/\/.+/g,
-
-    // exceptions
-    TJAError: "TJAError ",
-    EOFError: "EOFError ",
-
-    Range(begin, end) {
-        function ret(n) {
-            return begin <= n && n <= end;
-        };
-
-        ret.begin = begin;
-        ret.end = end;
-
-        return ret;
+},
+{
+    makeFilename(name) {
+        return name + '.json';
     },
 
-    captialize(str) {
-        return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-    }
-});
-
-Taiko.Songdata.ReadNextHeader = Taiko.Songdata.TJAError + "ReadNextHeader ";
-
-Object.defineProperties(Taiko.Songdata.prototype, {
-    name: {
-        get: function() {
-            return this._name;
-        }
-    },
-    title: {
-        get: function() {
-            return this._title;
-        }
-    },
-    subtitle: {
-        get: function() {
-            return this._subtitle;
-        }
-    },
-    wave: {
-        get: function() {
-            return this._wave;
-        }
-    },
-    balloons: {
-        get: function() {
-            return this._balloons;
-        }
-    },
-    scoreinit: {
-        get: function() {
-            return this._scoreinit;
-        }
-    },
-    scorediff: {
-        get: function() {
-            return this._scorediff;
-        }
-    },
-    songvol: {
-        get: function() {
-            return this._songvol;
-        }
-    },
-    sevol: {
-        get: function() {
-            return this._sevol;
-        }
-    },
-    level: {
-        get: function() {
-            return this._level;
-        }
-    },
-    course: {
-        get: function() {
-            return this._course;
-        }
-    },
-    gogotimes: {
-        get: function() {
-            return this._gogotimes;
-        }
-    },
-    prevCourse: {
-        get: function() {
-            return this._prevCourse;
-        }
-    },
-    demostart: {
-        get: function() {
-            return this._demostart;
-        }
-    },
-    fumen: {
-        get: function() {
-            if (!this._fumen) { this.parseFumen(); }
-            return this._fumen;
-        }
-    },
-    nextCourse: {
-        get: function() {
-            try {
-                if (this._nextCourse !== undefined) { return this._nextCourse; }
-                this.readFumenString();
-                this._nextCourse = this.clone();
-                this._nextCourse.readNextCourse();
-                this._nextCourse._prevCourse = this;
-                return this._nextCourse;
-            } catch (e) {
-                if (typeof(e) === "string" && e.startsWith(Taiko.Songdata.EOFError)) {
-                    this._nextCourse = false;
-                    return false;
-                } else {
-                    throw e;
-                }
+    load(name) {
+        var filename = Taiko.Playdata.makeFilename(name);
+        var data = Storage.load(filename);
+        var ret = new Taiko.Playdata();
+        if (data) {
+            data = JSON.parse(data)
+            for (var key in data) {
+                 ret[key] = data[key];
             }
         }
+        return ret;
     }
 });
 
-Object.assign(Taiko.Songdata.prototype, {
-// shadow copy
+Taiko.Songdata = Utils.createClass(function(name) {
+    this._name = name;
+    this.initData();
+},
+{
+    get name() {
+        return this._name;
+    },
+    get title() {
+        return this._title;
+    },
+    get subtitle() {
+        return this._subtitle;
+    },
+    get wave() {
+        return this._wave;
+    },
+    get balloons() {
+        return this._balloons;
+    },
+    get scoreinit() {
+        return this._scoreinit;
+    },
+    get scorediff() {
+        return this._scorediff;
+    },
+    get songvol() {
+        return this._songvol;
+    },
+    get sevol() {
+        return this._sevol;
+    },
+    get level() {
+        return this._level;
+    },
+    get course() {
+        return this._course;
+    },
+    get gogotimes() {
+        return this._gogotimes;
+    },
+    get prevCourse() {
+        return this._prevCourse;
+    },
+    get demostart() {
+        return this._demostart;
+    },
+    get fumen() {
+        if (!this._fumen) { this.parseFumen(); }
+        return this._fumen;
+    },
+    get nextCourse() {
+        try {
+            if (this._nextCourse !== undefined) { return this._nextCourse; }
+            this.readFumenString();
+            this._nextCourse = this.clone();
+            this._nextCourse.readNextCourse();
+            this._nextCourse._prevCourse = this;
+            return this._nextCourse;
+        } catch (e) {
+            if (typeof(e) === "string" && e.startsWith(Taiko.Songdata.EOFError)) {
+                this._nextCourse = false;
+                return false;
+            } else {
+                throw e;
+            }
+        }
+    },
+
     clone() {
         var ret = Object.create(Taiko.Songdata.prototype);
-        for (key in this) {
+        for (var key in this) {
             if (key.startsWith('_')) {
                 ret[key] = this[key];
             }
@@ -707,7 +647,7 @@ Object.assign(Taiko.Songdata.prototype, {
     checkValidity() {
         var balloonsLen = 0;
         var balloons = this._fumen[Taiko.BALLOON]
-        for (time in balloons) {
+        for (var time in balloons) {
             balloonsLen += balloons[time].length;
         }
 
@@ -738,7 +678,34 @@ Object.assign(Taiko.Songdata.prototype, {
     isReady() {
         return this._data;
     }
+},
+{
+    HEADER_RE: /#?(\w+) *:?(.*)/m,
+    DIRECTIVE_RE: /^# *(\w+) *:?(.*)/m,
+    COMMENT_RE: /\/\/.+/g,
+
+    // exceptions
+    TJAError: "TJAError ",
+    EOFError: "EOFError ",
+
+    Range(begin, end) {
+        var ret = function(n) {
+            return begin <= n && n <= end;
+        };
+
+        ret.begin = begin;
+        ret.end = end;
+
+        return ret;
+    },
+
+    captialize(str) {
+        return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+    }
 });
+
+Taiko.Songdata.ReadNextHeader = Taiko.Songdata.TJAError + "ReadNextHeader ";
+
 
 void function($) {
     function divide100(contents) {
@@ -777,74 +744,53 @@ void function($) {
     $.directiveScroll = $.headerScroll;
 }(Taiko.Songdata.prototype);
 
-Taiko.Note = function(type, time, speed) {
-    return new Taiko.Note.TYPES[type](type, time, speed);
-};
 
-Taiko.Note.Base = function(type, time, speed) {
+Taiko.Note.Base = Utils.createClass(function(type, time, speed) {
     this._type = type;
     this._time = time;
     this._speed = speed;
     this._status = 0;
-};
+},
+{
+    get type() {
+        return this._type;
+    },
+    get time() {
+        return this._time;
+    },
+    get startTime() {
+        return this._time;
+    },
+    get endTime() {
+        return this._time;
+    },
+    get speed() {
+        return this._speed;
+    },
+    get status() {
+        return this._status;
+    },
+    score: 0,
+    get x() {
+        return (this.startTime - Taiko.playTime) * this._speed;
+    },
+    get z() {
+        return Graphics.width - this.x;
+    },
+    centerX: Taiko.NOTE_SIZE / 2,
+    get anchorX() {
+        return this.centerX / this.width;
+    },
+    width: Taiko.NOTE_SIZE,
+    get appearTime() {
+        return this.startTime - (Graphics.width + this.centerX) / this._speed;
+    },
+    get bitmap() {
+        var ret = new Bitmap(this.width, Taiko.NOTE_SIZE);
+        this.draw(ret);
+        return ret;
+    },
 
-Object.defineProperties(Taiko.Note.Base.prototype, {
-    type: {
-        get: function() { return this._type; }
-    },
-    time: {
-        get: function() { return this._time; }
-    },
-    startTime: {
-        get: function() { return this._time; }
-    },
-    endTime: {
-        get: function() { return this._time; }
-    },
-    speed: {
-        get: function() { return this._speed; }
-    },
-    status: {
-        get: function() { return this._status; }
-    },
-    score: {
-        value: 0
-    },
-    x: {
-        get: function() {
-            return (this.startTime - Taiko.playTime) * this._speed;
-        }
-    },
-    z: {
-        get: function() {
-            return Graphics.width - this.x;
-        }
-    },
-    centerX: {
-        value: Taiko.NOTE_SIZE / 2
-    },
-    anchorX: {
-        get: function() { return this.centerX / this.width; }
-    },
-    width: {
-        value: Taiko.NOTE_SIZE
-    },
-    appearTime: {
-        get: function() {
-            return this.startTime - (Graphics.width + this.centerX) / this._speed;
-        }
-    },
-    bitmap: {
-        get: function() {
-            var ret = new Bitmap(this.width, Taiko.NOTE_SIZE);
-            this.draw(ret);
-            return ret;
-        }
-    }
-});
-
-
-Object.assign(Taiko.Note.Base.prototype, {
     isOver() {
         return Taiko.playTime > this.endTime;
     },
@@ -853,15 +799,9 @@ Object.assign(Taiko.Note.Base.prototype, {
         return this._status !== false;
     },
 
-    isNormal() {
-        return false;
-    },
-
-    hit() {
-    },
-
-    draw(bitmap) {
-    },
+    isNormal: Utils.returnFalse,
+    hit: Utils.voidFunction,
+    draw: Utils.voidFunction
 });
 
 void function($) {
@@ -872,36 +812,49 @@ void function($) {
 }(Taiko.Note.Base.prototype);
 
 
-Taiko.Note.Barline = function() {
-    Taiko.Note.Base.apply(this, arguments);
-};
-
-Taiko.Note.Barline.prototype = Object.assign(Object.create(Taiko.Note.Base.prototype), {
-    constructor: Taiko.Note.Barline,
-    COLOR: '#EEE',
+Taiko.Note.Barline = Utils.deriveClass(Taiko.Note.Base, null,
+{
+    centerX: 0,
+    anchorX: 0,
+    width: 1,
+    z: 0,
 
     draw(bitmap) {
         bitmap.fillRect(0, 0, this.width, Taiko.NOTE_SIZE, Taiko.Note.Barline.COLOR);
     }
-});
-
-Object.defineProperties(Taiko.Note.Barline.prototype, {
-    centerX: { value: 0 },
-    anchorX: { value: 0 },
-    width: { value: 1 },
-    z: { value: 0 }
+},
+{
+    COLOR: '#EEE'
 });
 
 
-Taiko.Note.Normal = function() {
-    Taiko.Note.Base.apply(this, arguments);
-};
-Taiko.Note.Normal.prototype = Object.assign(Object.create(Taiko.Note.Base.prototype), {
-    constructor: Taiko.Note.Normal,
+Taiko.Note.Normal = Utils.deriveClass(Taiko.Note.Base, null, {
 
-    isNormal() {
-        return true;
+    get score() {
+        if (!this._performance || this._performance == Taiko.Judgement.MISS) {
+            return 0;
+        }
+        var score = Taiko.scoreinit + Math.min(Taiko.combo / 10, 10) * Taiko.scorediff;
+        if (this.isDoubleScore()) {
+            score *= 2;
+        }
+        if (this.performance == Taiko.Judgement.GREAT) {
+            score /= 2;
+        }
+        if (this.isGogotime()) {
+            score *= 1.2;
+        }
+        return Math.floor(score);
     },
+
+    get performance() {
+        if (!this._performance) {
+            this._performance = this.judge();
+        }
+        return this._performance;
+    },
+
+    isNormal: Utils.returnTrue,
 
     hit() {
         if (!this.isOver()) {
@@ -953,76 +906,38 @@ Taiko.Note.Normal.prototype = Object.assign(Object.create(Taiko.Note.Base.protot
     },
 });
 
-Object.defineProperties(Taiko.Note.Normal.prototype, {
-    score: {
-        get: function() {
-            if (!this._performance || this._performance == Taiko.Judgement.MISS) {
-                return 0;
-            }
-            var score = Taiko.scoreinit + Math.min(Taiko.combo / 10, 10) * Taiko.scorediff;
-            if (this.isDoubleScore()) {
-                score *= 2;
-            }
-            if (this.performance == Taiko.Judgement.GREAT) {
-                score /= 2;
-            }
-            if (this.isGogotime()) {
-                score *= 1.2;
-            }
-            return Math.floor(score);
-        }
+Taiko.Note.RollBase = Utils.deriveClass(Taiko.Note.Base, null, {
+    get startTime() {
+        return this._time.begin;
     },
-
-    performance: {
-        get: function() {
-            if (!this._performance) {
-                this._performance = this.judge();
-            }
-            return this._performance;
-        }
-    }
-});
-
-
-Taiko.Note.RollBase = function() {
-    Taiko.Note.Base.apply(this, arguments);
-};
-Taiko.Note.RollBase.prototype = Object.assign(Object.create(Taiko.Note.Base.prototype), {
-    constructor: Taiko.Note.RollBase,
+    get endTime() {
+        return this._time.end;
+    },
+    get number() {
+        return this._status;
+    },
 
     isHitting() {
         return this._time(Taiko.playTime);
     }
 });
 
-Object.defineProperties(Taiko.Note.RollBase.prototype, {
-    startTime: {
-        get: function() {
-            return this._time.begin;
-        }
-    },
-    endTime: {
-        get: function() {
-            return this._time.end;
-        }
-    },
-    number: {
-        get: function() {
-            return this._status;
-        }
-    }
-});
 
-
-Taiko.Note.Roll = function() {
-    Taiko.Note.RollBase.apply(this, arguments);
-};
-Taiko.Note.Roll.prototype = Object.assign(Object.create(Taiko.Note.RollBase.prototype), {
-    constructor: Taiko.Note.Roll,
-
-    isRoll() {
-        return true;
+Taiko.Note.Roll = Utils.deriveClass(Taiko.Note.RollBase, null, {
+    get score() {
+        var score = this.isBig() ? 360 : 300;
+        if (Taiko.isGogotime()) {
+            score *= 1.2;
+        }
+        return Math.floor(score);
     },
+    get bodyWidth() {
+        return Math.floor((this._time.end - this._time.begin) * this._speed);
+    },
+    get width() {
+        return Taiko.NOTE_SIZE + this.bodyWidth;
+    },
+    isRoll: Utils.returnTrue,
 
     isBig() {
         return this._type == Taiko.ROLL_BIG;
@@ -1059,38 +974,34 @@ Taiko.Note.Roll.prototype = Object.assign(Object.create(Taiko.Note.RollBase.prot
     }
 });
 
-Object.defineProperties(Taiko.Note.Roll.prototype, {
-    score: {
-        get: function() {
-            var score = this.isBig() ? 360 : 300;
-            if (Taiko.isGogotime()) {
-                score *= 1.2;
-            }
-            return Math.floor(score);
-        }
-    },
-    bodyWidth: {
-        get: function() {
-            return Math.floor((this._time.end - this._time.begin) * this._speed);
-        }
-    },
-    width: {
-        get: function() {
-            return Taiko.NOTE_SIZE + this.bodyWidth;
-        }
-    }
-});
 
+Taiko.Note.Balloon = Utils.deriveClass(Taiko.Note.RollBase, null, {
 
-Taiko.Note.Balloon = function() {
-    Taiko.Note.RollBase.apply(this, arguments);
-};
-Taiko.Note.Balloon.prototype = Object.assign(Object.create(Taiko.Note.RollBase.prototype), {
-    constructor: Taiko.Note.Balloon,
-
-    isBalloon() {
-        return true;
+    get number() {
+        return this._status;
     },
+    set number(n) {
+        this._status = n;
+    },
+    get x() {
+        if (this.isHitting()) {
+            return 0;
+        }
+        if (this.isOver()) {
+            return (this.endTime - Taiko.playTime) * this._speed;
+        }
+        return (this.startTime - Taiko.playTime) * this._speed;
+    },
+    width: Taiko.NOTE_SIZE * 2,
+    get score() {
+        var score = this._status !== false ? 300 : 5000;
+        if (Taiko.isGogotime) {
+            score *= 1.2;
+        }
+        return Math.floor(score);
+    },
+
+    isBalloon: Utils.returnTrue,
 
     isHitting() {
         return this._status !== false && Taiko.Note.RollBase.prototype.isHitting.call(this);
@@ -1112,36 +1023,6 @@ Taiko.Note.Balloon.prototype = Object.assign(Object.create(Taiko.Note.RollBase.p
     }
 });
 
-Object.defineProperties(Taiko.Note.Balloon.prototype, {
-    number: {
-        get: function() { return this._status; },
-        set: function(n) { this._status = n; }
-    },
-    x: {
-        get: function() {
-            if (this.isHitting()) {
-                return 0;
-            }
-            if (this.isOver()) {
-                return (this.endTime - Taiko.playTime) * this._speed;
-            }
-            return (this.startTime - Taiko.playTime) * this._speed;
-        }
-    },
-    width: {
-        value: Taiko.NOTE_SIZE * 2
-    },
-    score: {
-        get: function() {
-            var score = this._status !== false ? 300 : 5000;
-            if (Taiko.isGogotime) {
-                score *= 1.2;
-            }
-            return Math.floor(score);
-        }
-    }
-});
-
 Taiko.Note.TYPES = [
     Taiko.Note.Barline,
     Taiko.Note.Normal,
@@ -1154,20 +1035,40 @@ Taiko.Note.TYPES = [
 ];
 
 
-Taiko.Fumen = function(songdata) {
+Taiko.Fumen = Utils.createClass(function(songdata) {
     this._songdata = songdata;
     this._fumen = songdata.fumen;
     this.initNotes();
     this.initNotesForDisplay();
     this.initNoteTypes();
     this.initEndTime();
-};
-
-Object.assign(Taiko.Fumen.prototype, {
+},
+{
+    get notes() {
+        return this._notes;
+    },
+    get notesForDisplay() {
+        return this._notesForDisplay;
+    },
+    get dons() {
+        return this._dons;
+    },
+    get kas() {
+        return this._kas;
+    },
+    get rolls() {
+        return this._rolls;
+    },
+    get balloons() {
+        return this._balloons;
+    },
+    get endTime() {
+        return this._endTime;
+    },
     initNotes() {
         this._notes = this._fumen.map(function(obj, type) {
             var notes = [];
-            for (speed in obj) {
+            for (var speed in obj) {
                 obj[speed].forEach(function(time) {
                     notes.push(Taiko.Note(type, time, speed));
                 });
@@ -1209,39 +1110,15 @@ Object.assign(Taiko.Fumen.prototype, {
     }
 });
 
-Object.defineProperties(Taiko.Fumen.prototype, {
-    notes: {
-        get: function() { return this._notes; }
-    },
-    notesForDisplay: {
-        get: function() { return this._notesForDisplay; }
-    },
-    dons: {
-        get: function() { return this._dons; }
-    },
-    kas: {
-        get: function() { return this._kas; }
-    },
-    rolls: {
-        get: function() { return this._rolls; }
-    },
-    balloons: {
-        get: function() { return this._balloons; }
-    },
-    endTime: {
-        get: function() { return this._endTime; }
-    }
-});
 
-
-Taiko.Gauge = function(fumen) {
+Taiko.Gauge = Utils.createClass(function(fumen) {
     this._value = 0;
     this._max = (fumen.dons.length + fumen.kas.length) * 5;
-};
-
-Taiko.Gauge.NORMAL_RATE = 0.8;
-
-Object.assign(Taiko.Gauge.prototype, {
+},
+{
+    get rate() {
+        return this._value / this._max;
+    },
     add(performance) {
         switch(performance) {
             case Taiko.Judgement.PERFECT:
@@ -1269,8 +1146,7 @@ Object.assign(Taiko.Gauge.prototype, {
     isMax() {
         return this._value === this._max;
     }
-});
-
-Object.defineProperty(Taiko.Gauge.prototype, 'rate', {
-    get: function() { return this._value / this._max; }
+},
+{
+    NORMAL_RATE: 0.8
 });
