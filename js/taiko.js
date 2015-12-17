@@ -1,180 +1,184 @@
 
-Taiko = {}
+window.Taiko = {
+    EXTNAME: '.tja',
 
-Taiko.EXTNAME = '.tja';
+    BARLINE: 0,
+    DON_SMALL: 1,
+    KA_SMALL: 2,
+    DON_BIG: 3,
+    KA_BIG: 4,
+    ROLL_SMALL: 5,
+    ROLL_BIG: 6,
+    BALLOON: 7,
+    END_ROLL: 8,
+    NOT_SUPPORT: 9,
 
-Taiko.BARLINE = 0;
-Taiko.DON_SMALL = 1;
-Taiko.KA_SMALL = 2;
-Taiko.DON_BIG = 3;
-Taiko.KA_BIG = 4;
-Taiko.ROLL_SMALL = 5;
-Taiko.ROLL_BIG = 6;
-Taiko.BALLOON = 7;
-Taiko.END_ROLL = 8;
-Taiko.NOT_SUPPORT = 9;
+    NOTE_SIZE: 60,
+    NOTE_SIZE_SMALL: 34,
+    NOTE_SIZE_BIG: 52,
 
-Taiko.NOTE_SIZE = 60;
-Taiko.NOTE_SIZE_SMALL = 34;
-Taiko.NOTE_SIZE_BIG = 52;
+    Version: {
+        MAJOR: 0,
+        MINOR: 0,
+        PATCH: 0,
 
-Taiko.Version = {
-    MAJOR: 0,
-    MINOR: 0,
-    PATCH: 0
+        toString() {
+            return Taiko.Version.STRING;
+        }
+    },
+
+    DOUBLE_TOLERANCE: 2,
+
+    Judgement: {
+        PERFECT: 25,
+        GREAT: 75,
+        MISS: 108
+    },
+
+    get playdata() {
+        return Taiko._playdata;
+    },
+    get lastHit() {
+        return Taiko._lastHit;
+    },
+    get startTime() {
+        return Taiko._startTime;
+    },
+    get combo() {
+        return Taiko._combo;
+    },
+    get fumen() {
+        return Taiko._fumen;
+    },
+    get gauge() {
+        return Taiko._gauge;
+    },
+    get songdata() {
+        return Taiko._songdata;
+    },
+    get playTime() {
+        return Taiko._playTime;
+    },
+    get score() {
+        return Taiko._playdata.score;
+    },
+    get songvol() {
+        return Taiko._songdata.songvol;
+    },
+    get sevol() {
+        return Taiko._songdata ? Taiko._songdata.sevol : 1;
+    },
+    get scoreinit() {
+        return Taiko._songdata.scoreinit;
+    },
+    get scorediff() {
+        return Taiko._songdata.scorediff;
+    },
+
+    initialize() {
+        Taiko.SE.initialize();
+    },
+
+    isStarted() {
+        return this._startTime;
+    },
+
+    isGameover() {
+        return this.isStarted() && this._playTime > this._fumen.endTime;
+    },
+
+    isGogotime() {
+        return this._songdata.gogotimes.some(function(range) {
+            return range(this._playTime);
+        }, this);
+    },
+
+    start() {
+        Taiko.Song.play(this._songdata.wave, this.songvol, false, 0);
+        this._startTime = this.msec();
+        this.updateTime();
+    },
+
+    tryStart() {
+        if (Taiko.Song.isReady()) {
+            Taiko.start();
+        }
+    },
+
+    setup(songdata) {
+        this.clear();
+        this._playdata = new Taiko.Playdata();
+        this._songdata = songdata;
+        this._fumen = new Taiko.Fumen(songdata);
+        this._gauge = new Taiko.Gauge(this._fumen);
+        Taiko.Song.prepare(songdata.wave);
+    },
+
+    clear() {
+        this._combo = 0;
+        this._hitCallbacks = [];
+        this._startTime = null;
+        this._playTime = 0;
+        this._lastHit = null;
+        this._songdata = null;
+    },
+
+    stop() {
+        ImageManager.clearRolls();
+        Taiko.Song.stop();
+        if (this.isGameover()) {
+            this._playdata.save();
+        }
+        this.clear();
+    },
+
+    hit(note) {
+        this._lastHit = note;
+        note.hit();
+        this.onHit();
+        this._hitCallbacks.forEach(function(callback) {
+            callback(note);
+        });
+    },
+
+    addHitListener(callback) {
+        this._hitCallbacks.push(callback);
+    },
+
+    updateTime() {
+        this._playTime = this.msec() - this.startTime;
+    },
+
+    onHit() {
+        var performance = this._lastHit.performance;
+        this._playdata.score += this._lastHit.score;
+        if (!performance) { return; }
+        this._gauge.add(performance);
+        switch(performance) {
+            case Taiko.Judgement.PERFECT:
+            case Taiko.Judgement.GREAT:
+                ++this._combo;
+                if (this._playdata.maxCombo = this._combo) {
+                    this._playdata.maxCombo = this._combo;
+                }
+                break;
+            case Taiko.Judgement.MISS:
+                this._combo = 0;
+        }
+        ++this._playdata[performance];
+    },
+
+    msec() {
+        return Date.now();
+    }
 };
+
+
 Taiko.Version.STRING = [Taiko.Version.MAJOR, Taiko.Version.MINOR, Taiko.Version.PATCH].join(',');
 Taiko.Version.toString = function() {
     return Taiko.Version.STRING;
 };
 Taiko.VERSION = (Taiko.Version.MAJOR << 20) + (Taiko.Version.MINOR << 10) + Taiko.Version.PATCH;
-
-Taiko.DOUBLE_TOLERANCE = 2;
-
-Taiko.Judgement = {
-    PERFECT: 25,
-    GREAT: 75,
-    MISS: 108
-};
-
-Object.defineProperties(Taiko, {
-    playdata: {
-        get: function() { return Taiko._playdata; }
-    },
-    lastHit: {
-        get: function() { return Taiko._lastHit; }
-    },
-    startTime: {
-        get: function() { return Taiko._startTime; }
-    },
-    combo: {
-        get: function() { return Taiko._combo; }
-    },
-    fumen: {
-        get: function() { return Taiko._fumen; }
-    },
-    gauge: {
-        get: function() { return Taiko._gauge; }
-    },
-    songdata: {
-        get: function() { return Taiko._songdata; }
-    },
-    playTime: {
-        get: function() { return Taiko._playTime; }
-    },
-    score: {
-        get: function() { return Taiko._playdata.score; }
-    },
-    songvol: {
-        get: function() { return Taiko._songdata.songvol; }
-    },
-    sevol: {
-        get: function() { return Taiko._songdata ? Taiko._songdata.sevol : 1; }
-    },
-    scoreinit: {
-        get: function() { return Taiko._songdata.scoreinit; }
-    },
-    scorediff: {
-        get: function() { return Taiko._songdata.scorediff; }
-    }
-});
-
-Taiko.initialize = function() {
-    Taiko.SE.initialize();
-};
-
-Taiko.isStarted = function() {
-    return this._startTime;
-};
-
-Taiko.isGameover = function() {
-    return this.isStarted() && this._playTime > this._fumen.endTime;
-};
-
-Taiko.isGogotime = function() {
-    return this._songdata.gogotimes.some(function(range) {
-        return range(this._playTime);
-    }, this);
-};
-
-Taiko.start = function() {
-    Taiko.Song.play(this._songdata.wave, this.songvol, false, 0);
-    this._startTime = this.msec();
-    this.updateTime();
-};
-
-Taiko.tryStart = function() {
-    if (Taiko.Song.isReady()) {
-        Taiko.start();
-    }
-};
-
-Taiko.setup = function(songdata) {
-    this.clear();
-    this._playdata = new Taiko.Playdata();
-    this._songdata = songdata;
-    this._fumen = new Taiko.Fumen(songdata);
-    this._gauge = new Taiko.Gauge(this._fumen);
-    Taiko.Song.prepare(songdata.wave);
-};
-
-Taiko.clear = function() {
-    this._combo = 0;
-    this._hitCallbacks = [];
-    this._startTime = null;
-    this._playTime = 0;
-    this._lastHit = null;
-    this._songdata = null;
-};
-
-Taiko.stop = function() {
-    ImageManager.clearRolls();
-    Taiko.Song.stop();
-    if (this.isGameover()) {
-        this._playdata.save();
-    }
-    this.clear();
-};
-
-Taiko.hit = function(note) {
-    this._lastHit = note;
-    note.hit();
-    this.onHit();
-    this._hitCallbacks.forEach(function(callback) {
-        callback(note);
-    });
-};
-
-Taiko.addHitListener = function(callback) {
-    this._hitCallbacks.push(callback);
-};
-
-Taiko.updateTime = function() {
-    this._playTime = this.msec() - this.startTime;
-};
-
-Taiko.onHit = function() {
-    var performance = this._lastHit.performance;
-    this._playdata.score += this._lastHit.score;
-    if (!performance) { return; }
-    this._gauge.add(performance);
-    switch(performance) {
-        case Taiko.Judgement.PERFECT:
-        case Taiko.Judgement.GREAT:
-            ++this._combo;
-            if (this._playdata.maxCombo = this._combo) {
-                this._playdata.maxCombo = this._combo;
-            }
-            break;
-        case Taiko.Judgement.MISS:
-            this._combo = 0;
-    }
-    ++this._playdata[performance];
-};
-
-Taiko.msec = function() {
-    return Date.now();
-};
 
 Taiko.SE = function(url) {
     this.buffer = new WebAudio(url);
@@ -193,18 +197,18 @@ Taiko.SE.prototype.play = function() {
 
 
 Taiko.Song = {
-    play: function(wave, volume, loop, offset) {
+    play(wave, volume, loop, offset) {
         this.prepare(wave);
         this._song.volume = volume;
         this._song.play(false, offset);
     },
-    stop: function() {
+    stop() {
         this._song.stop();
     },
-    isReady: function() {
+    isReady() {
         return this._song.isReady();
     },
-    prepare: function(wave) {
+    prepare(wave) {
         if (this._song.url !== wave) {
             this._song.clear();
             this._song = new WebAudio(wave);
@@ -241,25 +245,27 @@ Taiko.Playdata.load = function(name) {
     return ret;
 };
 
-Taiko.Playdata.prototype.isEmpty = function() {
-    return this.score === 0;
-};
 
-Taiko.Playdata.prototype.save = function() {
-    var name = Taiko.songdata.name;
-    var oldData = Taiko.Playdata.load(name);
-    var newData;
+Object.assign(Taiko.Playdata.prototype, {
+    isEmpty() {
+        return this.score === 0;
+    },
 
-    if (this.score > oldData.score) {
-        newData = JSON.parse(JSON.stringify(this));
-    } else {
-        newData = oldData;
+    save() {
+        var name = Taiko.songdata.name;
+        var oldData = Taiko.Playdata.load(name);
+        var newData;
+
+        if (this.score > oldData.score) {
+            newData = JSON.parse(JSON.stringify(this));
+        } else {
+            newData = oldData;
+        }
+
+        newData.normalClear = Taiko.gauge.isNormal() || oldData.normalClear;
+        Storage.save(Taiko.Playdata.makeFilename(name), JSON.stringify(newData));
     }
-
-    newData.normalClear = Taiko.gauge.isNormal() || oldData.normalClear;
-    Storage.save(Taiko.Playdata.makeFilename(name), JSON.stringify(newData));
-};
-
+});
 
 
 Taiko.Songdata = function(name) {
@@ -267,29 +273,32 @@ Taiko.Songdata = function(name) {
     this.initData();
 };
 
-Taiko.Songdata.HEADER_RE = /#?(\w+) *:?(.*)/m;
-Taiko.Songdata.DIRECTIVE_RE = /^# *(\w+) *:?(.*)/m;
-Taiko.Songdata.COMMENT_RE = /\/\/.+/g;
+Object.assign(Taiko.Songdata, {
+    HEADER_RE: /#?(\w+) *:?(.*)/m,
+    DIRECTIVE_RE: /^# *(\w+) *:?(.*)/m,
+    COMMENT_RE: /\/\/.+/g,
 
-// exceptions
-Taiko.Songdata.TJAError = "TJAError "
-Taiko.Songdata.ReadNextHeader = Taiko.Songdata.TJAError + "ReadNextHeader "
-Taiko.Songdata.EOFError = "EOFError "
+    // exceptions
+    TJAError: "TJAError ",
+    EOFError: "EOFError ",
 
-Taiko.Songdata.Range = function(left, right) {
-    var ret = function(n) {
-        return left <= n && n <= right;
-    };
+    Range(begin, end) {
+        function ret(n) {
+            return begin <= n && n <= end;
+        };
 
-    ret.begin = left;
-    ret.end = right;
+        ret.begin = begin;
+        ret.end = end;
 
-    return ret;
-};
+        return ret;
+    },
 
-Taiko.Songdata.captialize = function(str) {
-    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-};
+    captialize(str) {
+        return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+    }
+});
+
+Taiko.Songdata.ReadNextHeader = Taiko.Songdata.TJAError + "ReadNextHeader ";
 
 Object.defineProperties(Taiko.Songdata.prototype, {
     name: {
@@ -389,386 +398,384 @@ Object.defineProperties(Taiko.Songdata.prototype, {
     }
 });
 
+Object.assign(Taiko.Songdata.prototype, {
 // shadow copy
-Taiko.Songdata.prototype.clone = function() {
-    var ret = Object.create(Taiko.Songdata.prototype);
-    for (key in this) {
-        if (key.startsWith('_')) {
-            ret[key] = this[key];
+    clone() {
+        var ret = Object.create(Taiko.Songdata.prototype);
+        for (key in this) {
+            if (key.startsWith('_')) {
+                ret[key] = this[key];
+            }
         }
-    }
-    return ret;
-};
+        return ret;
+    },
 
-Taiko.Songdata.prototype.initData = function() {
-    this._wave = this._name;
-    this._bpm = 120;
-    this._time = 0;
-    this._measure = [4, 4];
-    this._scoreinit = 100;
-    this._scorediff = 100;
-    this._scroll = 1;
-    this._songvol = 1;
-    this._sevol = 1;
-    this._demostart = 0;
-    this._barlineOn = true;
-    this._balloons = [];
-    this._gogotimes = [];
+    initData() {
+        this._wave = this._name;
+        this._bpm = 120;
+        this._time = 0;
+        this._measure = [4, 4];
+        this._scoreinit = 100;
+        this._scorediff = 100;
+        this._scroll = 1;
+        this._songvol = 1;
+        this._sevol = 1;
+        this._demostart = 0;
+        this._barlineOn = true;
+        this._balloons = [];
+        this._gogotimes = [];
 
-    this._lastRoll = null
+        this._lastRoll = null
 
-    Storage.readFile(this._name + Taiko.EXTNAME, function(e, data) {
-        if (e) { throw e; }
-        this._data = data.replace(Taiko.Songdata.COMMENT_RE, '')
-        this._ptr = 0;
-        this.readHeader();
-    }.bind(this))
-};
-
-Taiko.Songdata.prototype.readNextCourse = function() {
-    this._fumen = null;
-    this._fumenString = null;
-    this.readHeader();
-};
-
-Taiko.Songdata.prototype.readHeader = function() {
-    try {
-        this.readUntil("\n#START").split("\n").forEach(function(line) {
-            var match = line.match(Taiko.Songdata.HEADER_RE);
-            if (match) {
-                var methodName = "header" + Taiko.Songdata.captialize(match[1]);
-                if (this[methodName]) {
-                    this._contents = match[2];
-                    this[methodName]();
-                }
-            };
-        }, this)
-    } catch (e) {
-        if (typeof(e) === "string" && e.startsWith(Taiko.Songdata.ReadNextHeader)) {
+        Storage.readFile(this._name + Taiko.EXTNAME, function(e, data) {
+            if (e) { throw e; }
+            this._data = data.replace(Taiko.Songdata.COMMENT_RE, '')
+            this._ptr = 0;
             this.readHeader();
-        } else {
-            throw e;
-        }
-    }
-};
+        }.bind(this))
+    },
 
-Taiko.Songdata.prototype.readFumenString = function() {
-    if (!this._fumenString) {
-        this._fumenString = this.readUntil("\n#END");
-    }
-    return this._fumenString;
-};
+    readNextCourse() {
+        this._fumen = null;
+        this._fumenString = null;
+        this.readHeader();
+    },
 
-Taiko.Songdata.prototype.parseFumen = function() {
-    this._fumen = [];
-    for (var i = 0; i < 8; ++i) {
-        this._fumen[i] = {};
-    }
-
-    this.readFumenString().split(',').forEach(function(bar) {
-        var lines = bar.split("\n").map(function(s) { return s.trim(); });
-
-        // read directives between bars
-        while ((this._line = lines[0]) !== undefined) {
-            if (!this._line || this.readDirective()) {
-                lines.shift();
+    readHeader() {
+        try {
+            this.readUntil("\n#START").split("\n").forEach(function(line) {
+                var match = line.match(Taiko.Songdata.HEADER_RE);
+                if (match) {
+                    var methodName = "header" + Taiko.Songdata.captialize(match[1]);
+                    if (this[methodName]) {
+                        this._contents = match[2];
+                        this[methodName]();
+                    }
+                };
+            }, this)
+        } catch (e) {
+            if (typeof(e) === "string" && e.startsWith(Taiko.Songdata.ReadNextHeader)) {
+                this.readHeader();
             } else {
-                break;
+                throw e;
             }
         }
+    },
 
-        // add barline
-        if (this._barlineOn) {
-            this.addNote(Taiko.BARLINE);
+    readFumenString() {
+        if (!this._fumenString) {
+            this._fumenString = this.readUntil("\n#END");
+        }
+        return this._fumenString;
+    },
+
+    parseFumen() {
+        this._fumen = [];
+        for (var i = 0; i < 8; ++i) {
+            this._fumen[i] = {};
         }
 
-        // count notes
-        var count = 0;
-        lines.forEach(function(line) {
-            if (!line.match(Taiko.Songdata.DIRECTIVE_RE)) {
-                // count 0-9
-                var lineMatch = line.match(/\d/g);
-                if (lineMatch) {
-                    count += lineMatch.length;
+        this.readFumenString().split(',').forEach(function(bar) {
+            var lines = bar.split("\n").map(function(s) { return s.trim(); });
+
+            // read directives between bars
+            while ((this._line = lines[0]) !== undefined) {
+                if (!this._line || this.readDirective()) {
+                    lines.shift();
+                } else {
+                    break;
                 }
             }
-        })
 
-        // read a bar
-        if (count === 0) {
-            this._time += this.barLength();
-        } else {
-            this._interval = this.barLength() / count;
+            // add barline
+            if (this._barlineOn) {
+                this.addNote(Taiko.BARLINE);
+            }
+
+            // count notes
+            var count = 0;
             lines.forEach(function(line) {
-                this._line = line;
-                this.readDirective() || this.readNotes();
-            }, this)
-            this._interval = null;
+                if (!line.match(Taiko.Songdata.DIRECTIVE_RE)) {
+                    // count 0-9
+                    var lineMatch = line.match(/\d/g);
+                    if (lineMatch) {
+                        count += lineMatch.length;
+                    }
+                }
+            })
+
+            // read a bar
+            if (count === 0) {
+                this._time += this.barLength();
+            } else {
+                this._interval = this.barLength() / count;
+                lines.forEach(function(line) {
+                    this._line = line;
+                    this.readDirective() || this.readNotes();
+                }, this)
+                this._interval = null;
+            }
+        }, this)
+
+        this.setGogoend();
+        this.checkValidity();
+    },
+
+    barLength() {
+        return 240000 / this._bpm * this._measure[0] / this._measure[1];
+    },
+
+    readDirective() {
+        var match = this._line.match(Taiko.Songdata.DIRECTIVE_RE);
+        if (match) {
+            var methodName = "directive" + Taiko.Songdata.captialize(match[1]);
+            if (this[methodName]) {
+                this._contents = match[2];
+                this[methodName]();
+            }
+            return true;
         }
-    }, this)
+        return false;
+    },
 
-    this.setGogoend();
-    this.checkValidity();
-};
+    readNotes() {
+        var len = this._line.length;
+        for (var i = 0; i < len; ++i) {
+            var ch = this._line[i];
+            if (ch < '0' || ch > '9') { continue; }
+            var type = parseInt(ch);
+            switch(type) {
+                case Taiko.DON_SMALL:
+                case Taiko.KA_SMALL:
+                case Taiko.DON_BIG:
+                case Taiko.KA_BIG:
+                    this.addNote(type, false);
+                    break;
+                case Taiko.ROLL_SMALL:
+                case Taiko.ROLL_BIG:
+                case Taiko.BALLOON:
+                    this.addNote(type, true);
+                    break;
+                case Taiko.END_ROLL:
+                    this.endRoll();
+                    break;
+                case Taiko.NOT_SUPPORT:
+                    this.addNote(Taiko.ROLL_SMALL, true);
+                    break;
+            }
+            this._time += this._interval;
+        };
+    },
 
-Taiko.Songdata.prototype.barLength = function() {
-    return 240000 / this._bpm * this._measure[0] / this._measure[1];
-};
-
-Taiko.Songdata.prototype.readDirective = function() {
-    var match = this._line.match(Taiko.Songdata.DIRECTIVE_RE);
-    if (match) {
-        var methodName = "directive" + Taiko.Songdata.captialize(match[1]);
-        if (this[methodName]) {
-            this._contents = match[2];
-            this[methodName]();
+    headerBpm() {
+        this.invalidInABar('BPMCHANGE');
+        var bpm = parseFloat(this._contents);
+        if (bpm) {
+            this._bpm = bpm;
+            this.updateSpeed();
         }
-        return true;
+    },
+
+    headerWave() {
+        var dirName = this._name.slice(0, this._name.lastIndexOf('/') + 1);
+        this._wave = dirName + this._contents;
+    },
+
+    headerMeasure() {
+        this.invalidInABar('MEASURE');
+        if (this._contents.match(/(\d+)(?:\s+|\s*\/\s*)(\d+)/)) {
+            this._measure = [parseInt(RegExp.$1), parseInt(RegExp.$2)];
+        }
+    },
+
+    headerOffset() {
+        var offset = parseFloat(this._contents);
+        if (offset) {
+            this._time = -1000 * offset;
+        }
+    },
+
+    headerScroll() {
+        var scroll = parseFloat(this._contents);
+        if (scroll) {
+            this._scroll = scroll;
+            this.updateSpeed();
+        }
+    },
+
+    headerBalloon() {
+        var sep = this._contents.indexOf(',') >= 0 ? ',' : ' '
+        this._balloons = this._contents.split(sep).map(function(s) {
+            return parseInt(s);
+        });
+    },
+
+    headerStyle() {
+        if (this._contents.toLowerCase().indexOf('double') >= 0) {
+            // skip
+            this.readUntil("\n#END");
+            this.readUntil("\n#END");
+            throw Taiko.Songdata.ReadNextHeader;
+        }
+    },
+
+    directiveGogostart() {
+        this.setGogostart() || this.tjaerror('unexpected #GOGOSTART');
+    },
+
+    directiveGogoend() {
+        this.setGogoend() || this.tjaerror('unexpected #GOGOEND');
+    },
+
+    directiveBarlineon() {
+        this._barlineOn = true;
+    },
+
+    directiveBarlineoff() {
+        this._barlineOn = false;
+    },
+
+    directiveDelay() {
+        var delay = parseFloat(this._contents);
+        if (delay) {
+            this._time += delay * 1000;
+        };
+    },
+
+    invalidInABar(directive) {
+        if (this._interval) {
+            this.tjaerror("unexpected #"+directive+" inside a bar")
+        };
+    },
+
+    updateSpeed() {
+        this._speed = this._bpm * this._scroll / 500;
+    },
+
+    isInGogotime() {
+        return typeof(this._gogotimes[this._gogotimes.length - 1]) === 'number';
+    },
+
+    setGogostart() {
+        if (!this.isInGogotime()) {
+            this._gogotimes.push(this._time);
+            return true;
+        }
+        return false;
+    },
+
+    setGogoend() {
+        if (this.isInGogotime()) {
+            var startTime = this._gogotimes.pop();
+            this._gogotimes.push(Taiko.Songdata.Range(startTime, this._time));
+            return true;
+        }
+        return false;
+    },
+
+    addNote(type, isRoll) {
+        if (this._lastRoll !== null) {
+            if (type != Taiko.BARLINE && type != this._lastRoll) {
+                this.tjaerror("unexpected note ("+type+"), expecting roll end (8)");
+            }
+        } else {
+
+            var noteArray = this._fumen[type][this._speed];
+            if (!noteArray) {
+                noteArray = this._fumen[type][this._speed] = []
+            }
+
+            noteArray.push(this._time);
+
+            if (isRoll) {
+                this._lastRoll = type;
+            }
+        }
+    },
+
+    endRoll() {
+        if (this._lastRoll) {
+            var notes = this._fumen[this._lastRoll][this._speed];
+            var startTime = notes.pop();
+            notes.push(Taiko.Songdata.Range(startTime, this._time));
+            this._lastRoll = null;
+        } else {
+            this.tjaerror('unexpected roll end (8)');
+        }
+    },
+
+    checkValidity() {
+        var balloonsLen = 0;
+        var balloons = this._fumen[Taiko.BALLOON]
+        for (time in balloons) {
+            balloonsLen += balloons[time].length;
+        }
+
+        if (this._balloons.length < balloonsLen) {
+            this.tjaerror("wrong number of balloons ("+this._balloons.size+" for "+balloonsLen+")");
+        }
+
+        if (this._lastRoll) {
+            this.tjaerror("unexpected #END, expecting roll end (8)");
+        };
+    },
+
+    tjaerror(message) {
+        throw(Taiko.Songdata.TJAError + message);
+    },
+
+    readUntil(sep) {
+        var index = this._data.indexOf(sep, this._ptr);
+        if (index < 0) {
+            throw Taiko.Songdata.EOFError;
+        }
+        index += sep.length;
+        var ret = this._data.slice(this._ptr, index);
+        this._ptr = index;
+        return ret;
+    },
+
+    isReady() {
+        return this._data;
     }
-    return false;
-};
+});
 
-Taiko.Songdata.prototype.readNotes = function() {
-    var len = this._line.length;
-    for (var i = 0; i < len; ++i) {
-        var ch = this._line[i];
-        if (ch < '0' || ch > '9') { continue; }
-        var type = parseInt(ch);
-        switch(type) {
-            case Taiko.DON_SMALL:
-            case Taiko.KA_SMALL:
-            case Taiko.DON_BIG:
-            case Taiko.KA_BIG:
-                this.addNote(type, false);
-                break;
-            case Taiko.ROLL_SMALL:
-            case Taiko.ROLL_BIG:
-            case Taiko.BALLOON:
-                this.addNote(type, true);
-                break;
-            case Taiko.END_ROLL:
-                this.endRoll();
-                break;
-            case Taiko.NOT_SUPPORT:
-                this.addNote(Taiko.ROLL_SMALL, true);
-                break;
-        }
-        this._time += this._interval;
-    };
-};
-
-Taiko.Songdata.defineHeader = function(name, conversion) {
-    var methodName = "header" + Taiko.Songdata.captialize(name);
-    var propName = "_" + name;
-    Taiko.Songdata.prototype[methodName] = function() {
-        if (conversion) {
-            this._contents = conversion(this._contents);
-        }
-        if (this._contents) {
-            this[propName] = this._contents;
-        }
-    }
-};
-
-// Taiko.Songdata.prototype["headerScoreinit"] = function() {
-//    this._scoreinit = parseInt(this._contents);
-// }
-Taiko.Songdata.defineHeader("scoreinit", parseInt);
-Taiko.Songdata.defineHeader("scorediff", parseInt);
-Taiko.Songdata.defineHeader("level", parseInt);
-
-Taiko.Songdata.defineHeader("demostart", parseFloat);
-
-Taiko.Songdata.defineHeader("title");
-Taiko.Songdata.defineHeader("subtitle");
-Taiko.Songdata.defineHeader("course");
-
-void function() {
-    var divide100 = function(contents) {
+void function($) {
+    function divide100(contents) {
         return parseInt(contents) / 100;
-    };
-    Taiko.Songdata.defineHeader("songvol", divide100);
-    Taiko.Songdata.defineHeader("sevol", divide100);
-}();
-
-Taiko.Songdata.prototype.headerBpm = function() {
-    this.invalidInABar('BPMCHANGE');
-    var bpm = parseFloat(this._contents);
-    if (bpm) {
-        this._bpm = bpm;
-        this.updateSpeed();
     }
-};
-
-Taiko.Songdata.prototype.headerWave = function() {
-    var dirName = this._name.slice(0, this._name.lastIndexOf('/') + 1);
-    this._wave = dirName + this._contents;
-};
-
-Taiko.Songdata.prototype.headerMeasure = function() {
-    this.invalidInABar('MEASURE');
-    if (this._contents.match(/(\d+)(?:\s+|\s*\/\s*)(\d+)/)) {
-        this._measure = [parseInt(RegExp.$1), parseInt(RegExp.$2)];
-    }
-};
-
-Taiko.Songdata.prototype.headerOffset = function() {
-    var offset = parseFloat(this._contents);
-    if (offset) {
-        this._time = -1000 * offset;
-    }
-};
-
-Taiko.Songdata.prototype.headerScroll = function() {
-    var scroll = parseFloat(this._contents);
-    if (scroll) {
-        this._scroll = scroll;
-        this.updateSpeed();
-    }
-};
-
-Taiko.Songdata.prototype.headerBalloon = function() {
-    var sep = this._contents.indexOf(',') >= 0 ? ',' : ' '
-    this._balloons = this._contents.split(sep).map(function(s) {
-        return parseInt(s);
-    });
-};
-
-Taiko.Songdata.prototype.headerStyle = function() {
-    if (this._contents.toLowerCase().indexOf('double') >= 0) {
-        // skip
-        this.readUntil("\n#END");
-        this.readUntil("\n#END");
-        throw Taiko.Songdata.ReadNextHeader;
-    }
-};
-
-
-Taiko.Songdata.prototype.directiveBpm = Taiko.Songdata.prototype.headerBpm;
-Taiko.Songdata.prototype.directiveBpmchange = Taiko.Songdata.prototype.headerBpm;
-Taiko.Songdata.prototype.directiveMeasure = Taiko.Songdata.prototype.headerMeasure;
-Taiko.Songdata.prototype.directiveScroll = Taiko.Songdata.prototype.headerScroll;
-
-Taiko.Songdata.prototype.directiveGogostart = function() {
-    this.setGogostart() || this.tjaerror('unexpected #GOGOSTART');
-};
-
-Taiko.Songdata.prototype.directiveGogoend = function() {
-    this.setGogoend() || this.tjaerror('unexpected #GOGOEND');
-};
-
-Taiko.Songdata.prototype.directiveBarlineon = function() {
-    this._barlineOn = true;
-};
-
-Taiko.Songdata.prototype.directiveBarlineoff = function() {
-    this._barlineOn = false;
-};
-
-Taiko.Songdata.prototype.directiveDelay = function() {
-    var delay = parseFloat(this._contents);
-    if (delay) {
-        this._time += delay * 1000;
-    };
-};
-
-Taiko.Songdata.prototype.invalidInABar = function(directive) {
-    if (this._interval) {
-        this.tjaerror("unexpected #"+directive+" inside a bar")
-    };
-};
-
-Taiko.Songdata.prototype.updateSpeed = function() {
-    this._speed = this._bpm * this._scroll / 500;
-};
-
-Taiko.Songdata.prototype.isInGogotime = function() {
-    return typeof(this._gogotimes[this._gogotimes.length - 1]) === 'number';
-};
-
-Taiko.Songdata.prototype.setGogostart = function() {
-    if (!this.isInGogotime()) {
-        this._gogotimes.push(this._time);
-        return true;
-    }
-    return false;
-};
-
-Taiko.Songdata.prototype.setGogoend = function() {
-    if (this.isInGogotime()) {
-        var startTime = this._gogotimes.pop();
-        this._gogotimes.push(Taiko.Songdata.Range(startTime, this._time));
-        return true;
-    }
-    return false;
-};
-
-Taiko.Songdata.prototype.addNote = function(type, isRoll) {
-    if (this._lastRoll !== null) {
-        if (type != Taiko.BARLINE && type != this._lastRoll) {
-            this.tjaerror("unexpected note ("+type+"), expecting roll end (8)");
-        }
-    } else {
-
-        var noteArray = this._fumen[type][this._speed];
-        if (!noteArray) {
-            noteArray = this._fumen[type][this._speed] = []
-        }
-
-        noteArray.push(this._time);
-
-        if (isRoll) {
-            this._lastRoll = type;
+    function defineHeader(name, conversion) {
+        var methodName = "header" + Taiko.Songdata.captialize(name);
+        var propName = "_" + name;
+        // Taiko.Songdata.prototype["headerScoreinit"] = function() {
+        //    this._scoreinit = parseInt(this._contents);
+        // }
+       $[methodName] = function() {
+            if (conversion) {
+                this._contents = conversion(this._contents);
+            }
+            if (this._contents) {
+                this[propName] = this._contents;
+            }
         }
     }
-};
+    defineHeader("scoreinit", parseInt);
+    defineHeader("scorediff", parseInt);
+    defineHeader("level", parseInt);
 
-Taiko.Songdata.prototype.endRoll = function() {
-    if (this._lastRoll) {
-        var notes = this._fumen[this._lastRoll][this._speed];
-        var startTime = notes.pop();
-        notes.push(Taiko.Songdata.Range(startTime, this._time));
-        this._lastRoll = null;
-    } else {
-        this.tjaerror('unexpected roll end (8)');
-    }
-};
+    defineHeader("demostart", parseFloat);
 
-Taiko.Songdata.prototype.checkValidity = function() {
-    var balloonsLen = 0;
-    var balloons = this._fumen[Taiko.BALLOON]
-    for (time in balloons) {
-        balloonsLen += balloons[time].length;
-    }
+    defineHeader("title");
+    defineHeader("subtitle");
+    defineHeader("course");
+    defineHeader("songvol", divide100);
+    defineHeader("sevol", divide100);
 
-    if (this._balloons.length < balloonsLen) {
-        this.tjaerror("wrong number of balloons ("+this._balloons.size+" for "+balloonsLen+")");
-    }
-
-    if (this._lastRoll) {
-        this.tjaerror("unexpected #END, expecting roll end (8)");
-    };
-};
-
-Taiko.Songdata.prototype.tjaerror = function(message) {
-    throw(Taiko.Songdata.TJAError + message);
-};
-
-Taiko.Songdata.prototype.readUntil = function(sep) {
-    var index = this._data.indexOf(sep, this._ptr);
-    if (index < 0) {
-        throw Taiko.Songdata.EOFError;
-    }
-    index += sep.length;
-    var ret = this._data.slice(this._ptr, index);
-    this._ptr = index;
-    return ret;
-};
-
-Taiko.Songdata.prototype.isReady = function() {
-    return this._data;
-};
-
+    $.directiveBpm = $.headerBpm;
+    $.directiveBpmchange = $.headerBpm;
+    $.directiveMeasure = $.headerMeasure;
+    $.directiveScroll = $.headerScroll;
+}(Taiko.Songdata.prototype);
 
 Taiko.Note = function(type, time, speed) {
     return new Taiko.Note.TYPES[type](type, time, speed);
@@ -836,36 +843,47 @@ Object.defineProperties(Taiko.Note.Base.prototype, {
     }
 });
 
-Taiko.Note.Base.prototype.isOver = function() {
-    return Taiko.playTime > this.endTime;
-};
 
-Taiko.Note.Base.prototype.isValid = function() {
-    return this._status !== false;
-};
+Object.assign(Taiko.Note.Base.prototype, {
+    isOver() {
+        return Taiko.playTime > this.endTime;
+    },
 
-Taiko.Note.Base.prototype.isNormal = function() {
-    return false;
-};
+    isValid() {
+        return this._status !== false;
+    },
 
-Taiko.Note.Base.prototype.isRoll = Taiko.Note.Base.prototype.isNormal;
-Taiko.Note.Base.prototype.isBalloon = Taiko.Note.Base.prototype.isNormal;
-Taiko.Note.Base.prototype.isHitting = Taiko.Note.Base.prototype.isNormal;
-Taiko.Note.Base.prototype.isBig = Taiko.Note.Base.prototype.isNormal;
+    isNormal() {
+        return false;
+    },
 
-Taiko.Note.Base.prototype.hit = function() {
-};
+    hit() {
+    },
 
-Taiko.Note.Base.prototype.draw = function(bitmap) {
-};
+    draw(bitmap) {
+    },
+});
+
+void function($) {
+    $.isRoll = $.isNormal;
+    $.isBalloon = $.isNormal;
+    $.isHitting = $.isNormal;
+    $.isBig = $.isNormal;
+}(Taiko.Note.Base.prototype);
+
 
 Taiko.Note.Barline = function() {
     Taiko.Note.Base.apply(this, arguments);
 };
-Taiko.Note.Barline.prototype = Object.create(Taiko.Note.Base.prototype);
-Taiko.Note.Barline.prototype.constructor = Taiko.Note.Barline;
 
-Taiko.Note.Barline.COLOR = "#EEE";
+Taiko.Note.Barline.prototype = Object.assign(Object.create(Taiko.Note.Base.prototype), {
+    constructor: Taiko.Note.Barline,
+    COLOR: '#EEE',
+
+    draw(bitmap) {
+        bitmap.fillRect(0, 0, this.width, Taiko.NOTE_SIZE, Taiko.Note.Barline.COLOR);
+    }
+});
 
 Object.defineProperties(Taiko.Note.Barline.prototype, {
     centerX: { value: 0 },
@@ -874,16 +892,66 @@ Object.defineProperties(Taiko.Note.Barline.prototype, {
     z: { value: 0 }
 });
 
-Taiko.Note.Barline.prototype.draw = function(bitmap) {
-    bitmap.fillRect(0, 0, this.width, Taiko.NOTE_SIZE, Taiko.Note.Barline.COLOR);
-};
-
 
 Taiko.Note.Normal = function() {
     Taiko.Note.Base.apply(this, arguments);
 };
-Taiko.Note.Normal.prototype = Object.create(Taiko.Note.Base.prototype);
-Taiko.Note.Normal.prototype.constructor = Taiko.Note.Normal;
+Taiko.Note.Normal.prototype = Object.assign(Object.create(Taiko.Note.Base.prototype), {
+    constructor: Taiko.Note.Normal,
+
+    isNormal() {
+        return true;
+    },
+
+    hit() {
+        if (!this.isOver()) {
+            this._status = false;
+        };
+    },
+
+    isBig() {
+        return this._type == Taiko.DON_BIG || this._type == Taiko.KA_BIG;
+    },
+
+    isDoubleScore() {
+        return this.isBig() && this.double;
+    },
+
+    isGogotime() {
+        Taiko.songdata.gogotimes.some(function(range) {
+            return range(this._time);
+        }, this);
+    },
+
+    judge() {
+        var offset = Math.abs(Taiko.playTime - this._time);
+        if (offset < Taiko.Judgement.PERFECT) {
+            return Taiko.Judgement.PERFECT;
+        }
+        if (offset < Taiko.Judgement.GREAT) {
+            return Taiko.Judgement.GREAT;
+        }
+        if (offset < Taiko.Judgement.MISS || this.isOver()) {
+            return Taiko.Judgement.MISS;
+        }
+        return null;
+    },
+
+    isOver() {
+        return Taiko.playTime - this._time > Taiko.Judgement.MISS;
+    },
+
+    draw(bitmap) {
+        var src = ImageManager.skin('notes');
+        src.addLoadListener(function() {
+            bitmap.blt(src,
+                (this._type - 1) * Taiko.NOTE_SIZE, 0,
+                Taiko.NOTE_SIZE, Taiko.NOTE_SIZE,
+                0, 0
+            )
+        }.bind(this));
+    },
+});
 
 Object.defineProperties(Taiko.Note.Normal.prototype, {
     score: {
@@ -915,64 +983,17 @@ Object.defineProperties(Taiko.Note.Normal.prototype, {
     }
 });
 
-Taiko.Note.Normal.prototype.isNormal = function() {
-    return true;
-};
-
-Taiko.Note.Normal.prototype.hit = function() {
-    if (!this.isOver()) {
-        this._status = false;
-    };
-};
-
-Taiko.Note.Normal.prototype.isBig = function() {
-    return this._type == Taiko.DON_BIG || this._type == Taiko.KA_BIG;
-};
-
-Taiko.Note.Normal.prototype.isDoubleScore = function() {
-    return this.isBig() && this.double;
-};
-
-Taiko.Note.Normal.prototype.isGogotime = function() {
-    Taiko.songdata.gogotimes.some(function(range) {
-        return range(this._time);
-    }, this);
-};
-
-Taiko.Note.Normal.prototype.judge = function() {
-    var offset = Math.abs(Taiko.playTime - this._time);
-    if (offset < Taiko.Judgement.PERFECT) {
-        return Taiko.Judgement.PERFECT;
-    }
-    if (offset < Taiko.Judgement.GREAT) {
-        return Taiko.Judgement.GREAT;
-    }
-    if (offset < Taiko.Judgement.MISS || this.isOver()) {
-        return Taiko.Judgement.MISS;
-    }
-    return null;
-};
-
-Taiko.Note.Normal.prototype.isOver = function() {
-    return Taiko.playTime - this._time > Taiko.Judgement.MISS;
-};
-
-Taiko.Note.Normal.prototype.draw = function(bitmap) {
-    var src = ImageManager.skin('notes');
-    src.addLoadListener(function() {
-        bitmap.blt(src,
-            (this._type - 1) * Taiko.NOTE_SIZE, 0,
-            Taiko.NOTE_SIZE, Taiko.NOTE_SIZE,
-            0, 0
-        )
-    }.bind(this));
-};
 
 Taiko.Note.RollBase = function() {
     Taiko.Note.Base.apply(this, arguments);
 };
-Taiko.Note.RollBase.prototype = Object.create(Taiko.Note.Base.prototype);
-Taiko.Note.RollBase.prototype.constructor = Taiko.Note.RollBase;
+Taiko.Note.RollBase.prototype = Object.assign(Object.create(Taiko.Note.Base.prototype), {
+    constructor: Taiko.Note.RollBase,
+
+    isHitting() {
+        return this._time(Taiko.playTime);
+    }
+});
 
 Object.defineProperties(Taiko.Note.RollBase.prototype, {
     startTime: {
@@ -992,15 +1013,51 @@ Object.defineProperties(Taiko.Note.RollBase.prototype, {
     }
 });
 
-Taiko.Note.RollBase.prototype.isHitting = function() {
-    return this._time(Taiko.playTime);
-};
 
 Taiko.Note.Roll = function() {
     Taiko.Note.RollBase.apply(this, arguments);
 };
-Taiko.Note.Roll.prototype = Object.create(Taiko.Note.RollBase.prototype);
-Taiko.Note.Roll.prototype.constructor = Taiko.Note.Roll;
+Taiko.Note.Roll.prototype = Object.assign(Object.create(Taiko.Note.RollBase.prototype), {
+    constructor: Taiko.Note.Roll,
+
+    isRoll() {
+        return true;
+    },
+
+    isBig() {
+        return this._type == Taiko.ROLL_BIG;
+    },
+
+    hit() {
+        ++this._status;
+    },
+
+    draw(bitmap) {
+        var src = ImageManager.skin('notes');
+        src.addLoadListener(function() {
+            var x = this.isBig() ? 480 : 300;
+
+            if (this.bodyWidth > 0) {
+                bitmap.blt(src,
+                    x, 0, Taiko.NOTE_SIZE, Taiko.NOTE_SIZE,
+                    this.centerX, 0, this.bodyWidth, Taiko.NOTE_SIZE
+                );
+            }
+
+            x += Taiko.NOTE_SIZE * 1.5;
+            bitmap.blt(src,
+                x, 0, Taiko.NOTE_SIZE * 1.5, Taiko.NOTE_SIZE,
+                this.centerX + this.bodyWidth, 0
+            );
+
+            x = this.isBig() ? 780 : 720;
+            bitmap.blt(src,
+                x, 0, Taiko.NOTE_SIZE, Taiko.NOTE_SIZE,
+                0, 0
+            );
+        }.bind(this));
+    }
+});
 
 Object.defineProperties(Taiko.Note.Roll.prototype, {
     score: {
@@ -1024,49 +1081,36 @@ Object.defineProperties(Taiko.Note.Roll.prototype, {
     }
 });
 
-Taiko.Note.Roll.prototype.isRoll = function() {
-    return true;
-};
-
-Taiko.Note.Roll.prototype.isBig = function() {
-    return this._type == Taiko.ROLL_BIG;
-};
-
-Taiko.Note.Roll.prototype.hit = function() {
-    ++this._status;
-};
-
-Taiko.Note.Roll.prototype.draw = function(bitmap) {
-    var src = ImageManager.skin('notes');
-    src.addLoadListener(function() {
-        var x = this.isBig() ? 480 : 300;
-
-        if (this.bodyWidth > 0) {
-            bitmap.blt(src,
-                x, 0, Taiko.NOTE_SIZE, Taiko.NOTE_SIZE,
-                this.centerX, 0, this.bodyWidth, Taiko.NOTE_SIZE
-            );
-        }
-
-        x += Taiko.NOTE_SIZE * 1.5;
-        bitmap.blt(src,
-            x, 0, Taiko.NOTE_SIZE * 1.5, Taiko.NOTE_SIZE,
-            this.centerX + this.bodyWidth, 0
-        );
-
-        x = this.isBig() ? 780 : 720;
-        bitmap.blt(src,
-            x, 0, Taiko.NOTE_SIZE, Taiko.NOTE_SIZE,
-            0, 0
-        );
-    }.bind(this));
-};
 
 Taiko.Note.Balloon = function() {
     Taiko.Note.RollBase.apply(this, arguments);
 };
-Taiko.Note.Balloon.prototype = Object.create(Taiko.Note.RollBase.prototype);
-Taiko.Note.Balloon.prototype.constructor = Taiko.Note.Balloon;
+Taiko.Note.Balloon.prototype = Object.assign(Object.create(Taiko.Note.RollBase.prototype), {
+    constructor: Taiko.Note.Balloon,
+
+    isBalloon() {
+        return true;
+    },
+
+    isHitting() {
+        return this._status !== false && Taiko.Note.RollBase.prototype.isHitting.call(this);
+    },
+
+    hit() {
+        --this._status;
+        if (this._status <= 0) {
+            this._status = false;
+            Taiko.SE.BALLOON.play();
+        }
+    },
+
+    draw(bitmap) {
+        src = ImageManager.skin('notes');
+        src.addLoadListener(function() {
+            bitmap.blt(src, 600, 0, this.width, Taiko.NOTE_SIZE, 0, 0);
+        }.bind(this));
+    }
+});
 
 Object.defineProperties(Taiko.Note.Balloon.prototype, {
     number: {
@@ -1098,29 +1142,6 @@ Object.defineProperties(Taiko.Note.Balloon.prototype, {
     }
 });
 
-Taiko.Note.Balloon.prototype.isBalloon = function() {
-    return true;
-};
-
-Taiko.Note.Balloon.prototype.isHitting = function() {
-    return this._status !== false && Taiko.Note.RollBase.prototype.isHitting.call(this);
-};
-
-Taiko.Note.Balloon.prototype.hit = function() {
-    --this._status;
-    if (this._status <= 0) {
-        this._status = false;
-        Taiko.SE.BALLOON.play();
-    }
-};
-
-Taiko.Note.Balloon.prototype.draw = function(bitmap) {
-    src = ImageManager.skin('notes');
-    src.addLoadListener(function() {
-        bitmap.blt(src, 600, 0, this.width, Taiko.NOTE_SIZE, 0, 0);
-    }.bind(this));
-};
-
 Taiko.Note.TYPES = [
     Taiko.Note.Barline,
     Taiko.Note.Normal,
@@ -1141,6 +1162,52 @@ Taiko.Fumen = function(songdata) {
     this.initNoteTypes();
     this.initEndTime();
 };
+
+Object.assign(Taiko.Fumen.prototype, {
+    initNotes() {
+        this._notes = this._fumen.map(function(obj, type) {
+            var notes = [];
+            for (speed in obj) {
+                obj[speed].forEach(function(time) {
+                    notes.push(Taiko.Note(type, time, speed));
+                });
+            }
+            return notes;
+        });
+    },
+
+    initNotesForDisplay() {
+        this._notesForDisplay = Array.prototype.concat.apply([], this._notes);
+        this._notesForDisplay.sort(function(a, b) {
+            return a.appearTime - b.appearTime;
+        });
+    },
+
+    initNoteTypes() {
+        var sortFunc = function(a, b) { return a.startTime - b.startTime; };
+
+        this._dons = this._notes[Taiko.DON_SMALL].concat(this._notes[Taiko.DON_BIG]);
+        this._kas = this._notes[Taiko.KA_SMALL].concat(this._notes[Taiko.KA_BIG]);
+        this._rolls = this._notes[Taiko.ROLL_SMALL].concat(this._notes[Taiko.ROLL_BIG]);
+        this._balloons = this._notes[Taiko.BALLOON].slice(0);
+        this._dons.sort(sortFunc);
+        this._kas.sort(sortFunc);
+        this._rolls.sort(sortFunc);
+        this._balloons.sort(sortFunc);
+
+        var len = this._balloons.length;
+        for (var i = 0; i < len; ++i) {
+            this._balloons[i].number = this._songdata.balloons[i];
+        };
+    },
+
+    initEndTime() {
+        var endTimes = this._notesForDisplay.map(function(note) {
+            return note.endTime;
+        });
+        this._endTime = Math.max.apply(Math, endTimes);
+    }
+});
 
 Object.defineProperties(Taiko.Fumen.prototype, {
     notes: {
@@ -1166,49 +1233,6 @@ Object.defineProperties(Taiko.Fumen.prototype, {
     }
 });
 
-Taiko.Fumen.prototype.initNotes = function() {
-    this._notes = this._fumen.map(function(obj, type) {
-        var notes = [];
-        for (speed in obj) {
-            obj[speed].forEach(function(time) {
-                notes.push(Taiko.Note(type, time, speed));
-            });
-        }
-        return notes;
-    });
-};
-
-Taiko.Fumen.prototype.initNotesForDisplay = function() {
-    this._notesForDisplay = Array.prototype.concat.apply([], this._notes);
-    this._notesForDisplay.sort(function(a, b) {
-        return a.appearTime - b.appearTime;
-    });
-};
-
-Taiko.Fumen.prototype.initNoteTypes = function() {
-    var sortFunc = function(a, b) { return a.startTime - b.startTime; };
-
-    this._dons = this._notes[Taiko.DON_SMALL].concat(this._notes[Taiko.DON_BIG]);
-    this._kas = this._notes[Taiko.KA_SMALL].concat(this._notes[Taiko.KA_BIG]);
-    this._rolls = this._notes[Taiko.ROLL_SMALL].concat(this._notes[Taiko.ROLL_BIG]);
-    this._balloons = this._notes[Taiko.BALLOON].slice(0);
-    this._dons.sort(sortFunc);
-    this._kas.sort(sortFunc);
-    this._rolls.sort(sortFunc);
-    this._balloons.sort(sortFunc);
-
-    var len = this._balloons.length;
-    for (var i = 0; i < len; ++i) {
-        this._balloons[i].number = this._songdata.balloons[i];
-    };
-};
-
-Taiko.Fumen.prototype.initEndTime = function() {
-    var endTimes = this._notesForDisplay.map(function(note) {
-        return note.endTime;
-    });
-    this._endTime = Math.max.apply(Math, endTimes);
-};
 
 Taiko.Gauge = function(fumen) {
     this._value = 0;
@@ -1217,34 +1241,36 @@ Taiko.Gauge = function(fumen) {
 
 Taiko.Gauge.NORMAL_RATE = 0.8;
 
+Object.assign(Taiko.Gauge.prototype, {
+    add(performance) {
+        switch(performance) {
+            case Taiko.Judgement.PERFECT:
+                this._value += 6;
+                break;
+            case Taiko.Judgement.GREAT:
+                this._value += 3;
+                break;
+            case Taiko.Judgement.MISS:
+                this._value -= 12;
+                break;
+        }
+
+        if (this._value < 0) {
+            this._value = 0;
+        } else if (this._value > this._max) {
+            this._value = this._max;
+        }
+    },
+
+    isNormal() {
+        return this._value >= this._max * Taiko.Gauge.NORMAL_RATE;
+    },
+
+    isMax() {
+        return this._value === this._max;
+    }
+});
+
 Object.defineProperty(Taiko.Gauge.prototype, 'rate', {
     get: function() { return this._value / this._max; }
 });
-
-Taiko.Gauge.prototype.add = function(performance) {
-    switch(performance) {
-        case Taiko.Judgement.PERFECT:
-            this._value += 6;
-            break;
-        case Taiko.Judgement.GREAT:
-            this._value += 3;
-            break;
-        case Taiko.Judgement.MISS:
-            this._value -= 12;
-            break;
-    }
-
-    if (this._value < 0) {
-        this._value = 0;
-    } else if (this._value > this._max) {
-        this._value = this._max;
-    }
-};
-
-Taiko.Gauge.prototype.isNormal = function() {
-    return this._value >= this._max * Taiko.Gauge.NORMAL_RATE;
-};
-
-Taiko.Gauge.prototype.isMax = function() {
-    return this._value === this._max;
-};
