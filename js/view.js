@@ -844,7 +844,7 @@ View.Play.Explosion.create = function() {
             return;
         }
         type = note.performance === Taiko.Judgement.PERFECT ? 0 : 1;
-        type += note.double ? 2 : 0;
+        type += note.isDoubleScore() ? 2 : 0;
         upper.resetAndShow(type);
         lower.resetAndShow(type);
     });

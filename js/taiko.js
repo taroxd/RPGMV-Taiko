@@ -892,7 +892,7 @@ Object.defineProperties(Taiko.Note.Normal.prototype, {
                 return 0;
             }
             var score = Taiko.scoreinit + Math.min(Taiko.combo / 10, 10) * Taiko.scorediff;
-            if (this.isBig() && this.double) {
+            if (this.isDoubleScore()) {
                 score *= 2;
             }
             if (this.performance == Taiko.Judgement.GREAT) {
@@ -927,6 +927,10 @@ Taiko.Note.Normal.prototype.hit = function() {
 
 Taiko.Note.Normal.prototype.isBig = function() {
     return this._type == Taiko.DON_BIG || this._type == Taiko.KA_BIG;
+};
+
+Taiko.Note.Normal.prototype.isDoubleScore = function() {
+    return this.isBig() && this.double;
 };
 
 Taiko.Note.Normal.prototype.isGogotime = function() {
