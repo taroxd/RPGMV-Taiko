@@ -35,6 +35,15 @@ window.Taiko = {
         MISS: 108
     },
 
+    _offset: 0,
+
+    get offset() {
+        return Taiko._offset;
+    },
+    set offset(value) {
+        Taiko._offset = value;
+        console.log("Current offset: " + value + "ms");
+    },
     get playdata() {
         return Taiko._playdata;
     },
@@ -146,7 +155,7 @@ window.Taiko = {
     },
 
     updateTime() {
-        this._playTime = this.msec() - this.startTime;
+        this._playTime = this.msec() - this.startTime + Taiko.offset;
     },
 
     onHit() {

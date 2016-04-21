@@ -1939,7 +1939,9 @@ Input.keyMapper = {
     98: 'down',     // numpad 2
     100: 'left',    // numpad 4
     102: 'right',   // numpad 6
-    104: 'up'       // numpad 8
+    104: 'up',      // numpad 8
+    187: 'equal',   // +/=
+    189: 'minus'    // -
 };
 
 /**

@@ -252,11 +252,13 @@ Scene.SongList = Utils.deriveClass(Scene.Base, null, {
         var json = Storage.load(Scene.SongList.INDEX_FILENAME);
         if (json) {
             var data = JSON.parse(json);
-            this._index = data[0];
-            this._courses = data[1];
+            this._index = data.index || 0;
+            this._courses = data.courses || {};
+            Taiko.offset = data.offset || 0;
         } else {
             this._index = 0;
             this._courses = {};
+            Taiko.offset = 0;
         }
 
         Storage.readFile('data/Songs.json', function(e, json) {
@@ -298,6 +300,10 @@ Scene.SongList = Utils.deriveClass(Scene.Base, null, {
             this.updateCourse(1);
         } else if (Input.isTriggered("left")) {
             this.updateCourse(-1);
+        } else if (Input.isTriggered("minus")) {
+            this.updateOffset(-5);
+        } else if (Input.isTriggered("equal")) {
+            this.updateOffset(5);
         }
         if (!Scene.isSceneChanging()) {
             this.updateScene();
@@ -341,18 +347,27 @@ Scene.SongList = Utils.deriveClass(Scene.Base, null, {
 
     saveIndex() {
         Storage.save(Scene.SongList.INDEX_FILENAME,
-            JSON.stringify([this._index, this._courses]));
+            JSON.stringify({
+                index: this._index,
+                courses: this._courses,
+                offset: Taiko.offset
+            }));
     },
 
     updateCourse(courseDiff) {
         if (this.selectCourse(this._index, courseDiff)) {
             var key = this.songdata().name;
-            if (key === undefined) {
+            if (!(key in this._courses)) {
                 this._courses[key] = 0;
             }
             this._courses[key] += courseDiff;
             this.saveIndex();
         }
+    },
+
+    updateOffset(diff) {
+        Taiko.offset += diff;
+        this.saveIndex();
     },
 
     selectCourse(index, courseDiff) {
@@ -362,7 +377,7 @@ Scene.SongList = Utils.deriveClass(Scene.Base, null, {
         var times = Math.abs(courseDiff);
         for (var i = 0; i < times; ++i) {
             data = (isToNext ? data.nextCourse : data.prevCourse) || data;
-        };
+        }
         this._songlist[index] = data;
         return lastData !== data;
     },
@@ -370,7 +385,8 @@ Scene.SongList = Utils.deriveClass(Scene.Base, null, {
     updateScene() {
         if (Input.isTriggered('ok')) {
             Taiko.SE.DONG.play();
-            Taiko.setup(this.songdata());
+            var songdata = this.songdata();
+            Taiko.setup(songdata);
             Scene.goto(Scene.Play);
         }
     }
