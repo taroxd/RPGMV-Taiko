@@ -14,13 +14,14 @@ Note that:
 
 Press UP and DOWN arrow keys to select a song. Press LEFT and RIGHT arrow keys to select a course.
 
-|  Function  |  Keys                       |
-| ---------- | --------------------------- |
-| Confirm    |  Z / Enter / Space          |
-| Select     |  Arrow keys / keypad        |
-| Cancel     |  X / Esc                    |
-| Don!       |  F / J                      |
-| Ka!        |  D / K                      |
+|  Function     |  Keys                       |
+| ------------- | --------------------------- |
+| Confirm       |  Z / Enter / Space          |
+| Select        |  Arrow keys / keypad        |
+| Cancel        |  X / Esc                    |
+| Don!          |  F / J                      |
+| Ka!           |  D / K                      |
+| Adjust offset | -/=                      |
 
 ## Description ##
 This is an implementation of Taiko with the help of RPG Maker MV.  
