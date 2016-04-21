@@ -21,7 +21,7 @@ Press UP and DOWN arrow keys to select a song. Press LEFT and RIGHT arrow keys t
 | Cancel        |  X / Esc                    |
 | Don!          |  F / J                      |
 | Ka!           |  D / K                      |
-| Adjust offset | -/=                      |
+| Adjust offset |  - / =                      |
 
 ## Description ##
 This is an implementation of Taiko with the help of RPG Maker MV.  
