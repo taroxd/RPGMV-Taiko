@@ -35,14 +35,15 @@ window.Taiko = {
         MISS: 108
     },
 
-    _offset: 0,
-
     get offset() {
-        return Taiko._offset;
+        return Taiko.Config.get('offset', 0);
     },
     set offset(value) {
-        Taiko._offset = value;
-        console.log("Current offset: " + value + "ms");
+        var current = Taiko.offset;
+        if (current != value) {
+            Taiko.Config.set('offset', value);
+            console.log("Current offset: " + value + "ms");
+        }
     },
     get playdata() {
         return Taiko._playdata;
@@ -155,7 +156,7 @@ window.Taiko = {
     },
 
     updateTime() {
-        this._playTime = this.msec() - this.startTime + Taiko.offset;
+        this._playTime = this.msec() - this.startTime - Taiko.offset;
     },
 
     onHit() {
@@ -1159,3 +1160,43 @@ Taiko.Gauge = Utils.createClass(function(fumen) {
 {
     NORMAL_RATE: 0.8
 });
+
+Taiko.Config = {
+    FILENAME: 'data/config',
+
+    _cache: {},
+
+    get(path, value) {
+        if (path in this._cache) return this._cache[path];
+        path = path.split('.');
+        var cur = this._config;
+        path.forEach(function(p) {
+            cur = cur && cur[p];
+        });
+        return this._cache[path] = cur || value;
+    },
+
+    set(path, value) {
+        this._cache[path] = value;
+        path = path.split('.');
+        var cur = this._config;
+        var len = path.length;
+        path.forEach(function(p, i) {
+            if (i != len - 1) {
+                if (typeof cur[p] != 'object') cur[p] = {};
+                cur = cur[p];
+            } else {
+                cur[p] = value;
+            }
+        });
+
+        Storage.save(this.FILENAME, JSON.stringify(this._config))
+    }
+};
+
+Taiko.Config._config = Storage.load(Taiko.Config.FILENAME);
+if (Taiko.Config._config) {
+    Taiko.Config._config = JSON.parse(Taiko.Config._config);
+} else {
+    Taiko.Config._config = {};
+}

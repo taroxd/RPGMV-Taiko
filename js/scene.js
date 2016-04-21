@@ -249,17 +249,9 @@ Scene.SongList = Utils.deriveClass(Scene.Base, null, {
 
     create() {
         Graphics.resize(480, 272);
-        var json = Storage.load(Scene.SongList.INDEX_FILENAME);
-        if (json) {
-            var data = JSON.parse(json);
-            this._index = data.index || 0;
-            this._courses = data.courses || {};
-            Taiko.offset = data.offset || 0;
-        } else {
-            this._index = 0;
-            this._courses = {};
-            Taiko.offset = 0;
-        }
+
+        this._index = Taiko.Config.get('songlist.index', 0);
+        this._courses = Taiko.Config.get('songlist.courses', {});
 
         Storage.readFile('data/Songs.json', function(e, json) {
             if (e) { throw e; }
@@ -346,12 +338,10 @@ Scene.SongList = Utils.deriveClass(Scene.Base, null, {
     },
 
     saveIndex() {
-        Storage.save(Scene.SongList.INDEX_FILENAME,
-            JSON.stringify({
-                index: this._index,
-                courses: this._courses,
-                offset: Taiko.offset
-            }));
+        Taiko.Config.set('songlist', {
+            index: this._index,
+            courses: this._courses
+        });
     },
 
     updateCourse(courseDiff) {
@@ -367,7 +357,6 @@ Scene.SongList = Utils.deriveClass(Scene.Base, null, {
 
     updateOffset(diff) {
         Taiko.offset += diff;
-        this.saveIndex();
     },
 
     selectCourse(index, courseDiff) {
