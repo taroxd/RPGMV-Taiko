@@ -179,7 +179,7 @@ window.Taiko = {
     },
 
     msec() {
-        return Date.now();
+        return performance.now();
     },
 
     Note(type, time, speed) {
