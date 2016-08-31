@@ -1,2 +1,5 @@
-/js/plugins
-/data
+/js/plugins.js
+/data/*
+!/data/Songs.json
+/Game.rpgproject
+/songs/*.json
